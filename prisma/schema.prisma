@@ -1,0 +1,184 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrgRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum EvaluationStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum TestSessionStatus {
+  CREATED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  passwordHash  String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  memberships   OrgMember[]
+  sessions      AuthSession[]
+  createdOrgs   Organization[] @relation("CreatedOrganizations")
+  initiatedRuns TestSession[]  @relation("InitiatedRuns")
+}
+
+model AuthSession {
+  id         String   @id @default(cuid())
+  tokenHash  String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime @default(now())
+  expiresAt  DateTime
+  ipAddress  String?
+  userAgent  String?
+}
+
+model Organization {
+  id          String        @id @default(cuid())
+  name        String
+  createdAt   DateTime      @default(now())
+  createdBy   User?         @relation("CreatedOrganizations", fields: [createdById], references: [id])
+  createdById String?
+  members     OrgMember[]
+  evaluations Evaluation[]
+  students    StudentRecord[]
+  groups      Group[]
+}
+
+model OrgMember {
+  id             String       @id @default(cuid())
+  role           OrgRole
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  createdAt      DateTime     @default(now())
+
+  @@unique([userId, organizationId])
+}
+
+model Evaluation {
+  id                String             @id @default(cuid())
+  name              String
+  description       String?
+  status            EvaluationStatus   @default(DRAFT)
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId    String
+  testDefinition    TestDefinition     @relation(fields: [testDefinitionId], references: [id])
+  testDefinitionId  String
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  sessions          TestSession[]
+}
+
+model StudentRecord {
+  id             String        @id @default(cuid())
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String?
+  code           String        @unique
+  grade          String?
+  section        String?
+  metadata       Json?
+  createdAt      DateTime      @default(now())
+  testSessions   TestSession[]
+}
+
+model TestDefinition {
+  id          String       @id @default(cuid())
+  slug        String
+  version     Int
+  title       String
+  description String?
+  styleId     String       @default("classic")
+  definition  Json
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  evaluations Evaluation[]
+  sessions    TestSession[]
+
+  @@unique([slug, version])
+}
+
+model TestSession {
+  id               String            @id @default(cuid())
+  status           TestSessionStatus @default(CREATED)
+  testDefinition   TestDefinition    @relation(fields: [testDefinitionId], references: [id])
+  testDefinitionId String
+  evaluation       Evaluation?       @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  evaluationId     String?
+  studentRecord    StudentRecord?    @relation(fields: [studentRecordId], references: [id], onDelete: SetNull)
+  studentRecordId  String?
+  group            Group?            @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  groupId          String?
+  initiatedBy      User?             @relation("InitiatedRuns", fields: [initiatedById], references: [id], onDelete: SetNull)
+  initiatedById    String?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  createdAt        DateTime          @default(now())
+  answers          Answer[]
+  scores           Score[]
+}
+
+model Answer {
+  id            String      @id @default(cuid())
+  testSession   TestSession @relation(fields: [testSessionId], references: [id], onDelete: Cascade)
+  testSessionId String
+  questionId    String
+  payload       Json
+  createdAt     DateTime    @default(now())
+
+  @@unique([testSessionId, questionId])
+}
+
+model Score {
+  id            String      @id @default(cuid())
+  testSession   TestSession @relation(fields: [testSessionId], references: [id], onDelete: Cascade)
+  testSessionId String
+  dimension     String
+  value         Float
+  metadata      Json?
+  createdAt     DateTime    @default(now())
+
+  @@index([dimension])
+  @@unique([testSessionId, dimension])
+}
+
+model Group {
+  id          String        @id @default(cuid())
+  code        String        @unique
+  name        String?
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String?
+  createdBy   User?         @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdById String?
+  createdAt   DateTime      @default(now())
+  members     GroupMember[]
+  sessions    TestSession[]
+}
+
+model GroupMember {
+  id        String @id @default(cuid())
+  group     Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId   String
+  label     String?
+  user      User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId    String?
+  createdAt DateTime @default(now())
+}

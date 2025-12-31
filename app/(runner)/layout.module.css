@@ -1,0 +1,9 @@
+.runnerShell {
+  min-height: 100vh;
+  background: #0f172a;
+  color: #f8fafc;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 32px;
+}
