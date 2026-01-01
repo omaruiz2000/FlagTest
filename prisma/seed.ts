@@ -1,4 +1,4 @@
-import { PrismaClient, OrgRole, EvaluationStatus, TestSessionStatus } from '@prisma/client';
+import { PrismaClient, OrgRole, EvaluationStatus } from '@prisma/client';
 import argon2 from 'argon2';
 
 const prisma = new PrismaClient();
@@ -74,6 +74,34 @@ async function main() {
               { dimension: 'initiative', delta: 1 },
             ],
           },
+          {
+            id: 'scenario-2',
+            widgetType: 'scenario_choice',
+            prompt: 'How do you react when a teammate is stuck?',
+            scenario: 'Your classmate is unsure how to move forward on a shared assignment.',
+            options: [
+              { id: 'a', label: 'Encourage them', description: 'Offer encouragement and ask guiding questions.' },
+              { id: 'b', label: 'Jump in', description: 'Quickly outline the next steps for them.' },
+              { id: 'c', label: 'Wait', description: 'Let them figure it out on their own for a bit.' },
+            ],
+            scoring: [
+              { dimension: 'collaboration', delta: 1 },
+            ],
+          },
+          {
+            id: 'scenario-3',
+            widgetType: 'scenario_choice',
+            prompt: 'What describes your approach to new projects?',
+            scenario: 'You are starting a brand new activity with friends.',
+            options: [
+              { id: 'a', label: 'Plan together', description: 'Propose a quick plan to get aligned.' },
+              { id: 'b', label: 'Start experimenting', description: 'Try something small to see what works.' },
+              { id: 'c', label: 'Look for a leader', description: 'Ask who wants to lead and follow their direction.' },
+            ],
+            scoring: [
+              { dimension: 'initiative', delta: 1 },
+            ],
+          },
         ],
       },
     },
@@ -93,12 +121,24 @@ async function main() {
   });
 
   await prisma.studentRecord.upsert({
-    where: { code: 'STUDENT-001' },
+    where: { code: 'CODE123' },
     update: {},
     create: {
-      code: 'STUDENT-001',
+      code: 'CODE123',
       grade: '5',
       section: 'A',
+      organizationId: organization.id,
+      metadata: { seed: true },
+    },
+  });
+
+  await prisma.studentRecord.upsert({
+    where: { code: 'CODE456' },
+    update: {},
+    create: {
+      code: 'CODE456',
+      grade: '5',
+      section: 'B',
       organizationId: organization.id,
       metadata: { seed: true },
     },

@@ -123,6 +123,7 @@ model TestSession {
   status           TestSessionStatus @default(CREATED)
   testDefinition   TestDefinition    @relation(fields: [testDefinitionId], references: [id])
   testDefinitionId String
+  participantTokenHash String?
   evaluation       Evaluation?       @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
   evaluationId     String?
   studentRecord    StudentRecord?    @relation(fields: [studentRecordId], references: [id], onDelete: SetNull)
@@ -136,6 +137,8 @@ model TestSession {
   createdAt        DateTime          @default(now())
   answers          Answer[]
   scores           Score[]
+
+  @@unique([participantTokenHash])
 }
 
 model Answer {
