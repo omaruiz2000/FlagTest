@@ -1,26 +1,11 @@
-'use client';
+import classic from './classic.module.css';
 
-import classicStyles from './classic.module.css';
+type RunnerStyle = typeof classic;
 
-export type StyleRegistryEntry = {
-  id: string;
-  label: string;
-  className: string;
-  description?: string;
+const styles: Record<string, RunnerStyle> = {
+  classic,
 };
 
-export const styleRegistry: Record<string, StyleRegistryEntry> = {
-  classic: {
-    id: 'classic',
-    label: 'Classic',
-    className: classicStyles.classicShell,
-    description: 'Neutral layout with balanced spacing.',
-  },
-};
-
-export function resolveStyle(styleId?: string) {
-  if (styleId && styleRegistry[styleId]) {
-    return styleRegistry[styleId];
-  }
-  return styleRegistry.classic;
+export function resolveStyle(styleId?: string): RunnerStyle {
+  return styles[styleId ?? ''] ?? classic;
 }

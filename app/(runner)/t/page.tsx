@@ -20,7 +20,7 @@ export default function RunnerHomePage() {
   const style = resolveStyle('classic');
 
   return (
-    <div className={style.className}>
+    <div className={style.classicShell}>
       <ScenarioChoiceWidget definition={exampleItem} />
     </div>
   );

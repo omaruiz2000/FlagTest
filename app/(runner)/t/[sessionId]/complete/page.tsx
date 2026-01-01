@@ -40,7 +40,7 @@ export default async function CompletionPage({ params }: CompletionProps) {
     : null;
 
   return (
-    <div className={style.className}>
+    <div className={style.classicShell}>
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '48px 12px', textAlign: 'center' }}>
         {feedbackMode === 'CAMOUFLAGE' && archetype ? (
           <div style={{ display: 'grid', gap: 12 }}>

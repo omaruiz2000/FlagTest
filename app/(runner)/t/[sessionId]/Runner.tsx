@@ -59,7 +59,7 @@ export function Runner({ sessionId, testDefinition, initialAnswers, initialScore
 
   if (completed) {
     return (
-      <div className={style.className}>
+      <div className={style.classicShell}>
         <div style={{ maxWidth: 640, margin: '0 auto', paddingTop: 48 }}>
           <h1>Guardando tus respuestas…</h1>
           <p>Redirigiendo a la pantalla de cierre.</p>
@@ -72,7 +72,7 @@ export function Runner({ sessionId, testDefinition, initialAnswers, initialScore
   const registryEntry = widgetRegistry[item.widgetType];
   if (!registryEntry) {
     return (
-      <div className={style.className}>
+      <div className={style.classicShell}>
         <div style={{ maxWidth: 720, margin: '0 auto', paddingTop: 32 }}>
           <p>Unsupported widget type: {item.widgetType}</p>
         </div>
@@ -83,7 +83,7 @@ export function Runner({ sessionId, testDefinition, initialAnswers, initialScore
   const initialAnswer = answers[item.id];
 
   return (
-    <div className={style.className}>
+    <div className={style.classicShell}>
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
           <div>Question {currentIndex + 1} of {testDefinition.items.length}</div>
