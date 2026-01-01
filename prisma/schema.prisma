@@ -27,17 +27,17 @@ enum TestSessionStatus {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  email         String         @unique
-  passwordHash  String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  memberships   OrgMember[]
-  sessions      AuthSession[]
-  createdOrgs   Organization[] @relation("CreatedOrganizations")
-  initiatedRuns TestSession[]  @relation("InitiatedRuns")
-  createdGroups Group[]        @relation("CreatedGroups")
-  groupMemberships GroupMember[] @relation("GroupMemberships")
+  id               String         @id @default(cuid())
+  email            String         @unique
+  passwordHash     String
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  memberships      OrgMember[]
+  sessions         AuthSession[]
+  createdOrgs      Organization[] @relation("CreatedOrganizations")
+  initiatedRuns    TestSession[]  @relation("InitiatedRuns")
+  createdGroups    Group[]        @relation("CreatedGroups")
+  groupMemberships GroupMember[]  @relation("GroupMemberships")
 }
 
 model AuthSession {
@@ -53,10 +53,10 @@ model AuthSession {
 }
 
 model Organization {
-  id          String        @id @default(cuid())
+  id          String          @id @default(cuid())
   name        String
-  createdAt   DateTime      @default(now())
-  createdBy   User?         @relation("CreatedOrganizations", fields: [createdById], references: [id])
+  createdAt   DateTime        @default(now())
+  createdBy   User?           @relation("CreatedOrganizations", fields: [createdById], references: [id])
   createdById String?
   members     OrgMember[]
   evaluations Evaluation[]
@@ -77,17 +77,17 @@ model OrgMember {
 }
 
 model Evaluation {
-  id                String             @id @default(cuid())
-  name              String
-  description       String?
-  status            EvaluationStatus   @default(DRAFT)
-  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  organizationId    String
-  testDefinition    TestDefinition     @relation(fields: [testDefinitionId], references: [id])
-  testDefinitionId  String
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  sessions          TestSession[]
+  id               String           @id @default(cuid())
+  name             String
+  description      String?
+  status           EvaluationStatus @default(DRAFT)
+  organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId   String
+  testDefinition   TestDefinition   @relation(fields: [testDefinitionId], references: [id])
+  testDefinitionId String
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  sessions         TestSession[]
 }
 
 model StudentRecord {
@@ -103,15 +103,15 @@ model StudentRecord {
 }
 
 model TestDefinition {
-  id          String       @id @default(cuid())
+  id          String        @id @default(cuid())
   slug        String
   version     Int
   title       String
   description String?
-  styleId     String       @default("classic")
+  styleId     String        @default("classic")
   definition  Json
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   evaluations Evaluation[]
   sessions    TestSession[]
 
@@ -158,29 +158,29 @@ model Score {
   metadata      Json?
   createdAt     DateTime    @default(now())
 
-  @@index([dimension])
   @@unique([testSessionId, dimension])
+  @@index([dimension])
 }
 
 model Group {
-  id            String        @id @default(cuid())
-  code          String        @unique
-  name          String?
-  organization  Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id             String        @id @default(cuid())
+  code           String        @unique
+  name           String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   organizationId String?
-  createdBy     User?         @relation("CreatedGroups", fields: [createdById], references: [id], onDelete: SetNull)
-  createdById   String?
-  createdAt     DateTime      @default(now())
-  members       GroupMember[]
-  sessions      TestSession[]
+  createdBy      User?         @relation("CreatedGroups", fields: [createdById], references: [id], onDelete: SetNull)
+  createdById    String?
+  createdAt      DateTime      @default(now())
+  members        GroupMember[]
+  sessions       TestSession[]
 }
 
 model GroupMember {
-  id        String @id @default(cuid())
-  group     Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
   groupId   String
   label     String?
-  user      User?  @relation("GroupMemberships", fields: [userId], references: [id], onDelete: SetNull)
+  user      User?    @relation("GroupMemberships", fields: [userId], references: [id], onDelete: SetNull)
   userId    String?
   createdAt DateTime @default(now())
 }
