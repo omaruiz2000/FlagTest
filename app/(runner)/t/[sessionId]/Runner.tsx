@@ -81,6 +81,7 @@ export function Runner({ sessionId, testDefinition, initialAnswers, initialScore
     );
   }
   const WidgetComponent = registryEntry.component as any;
+  const initialAnswer = answers[item.id];
 
   return (
     <div className={style.className}>
@@ -90,7 +91,9 @@ export function Runner({ sessionId, testDefinition, initialAnswers, initialScore
           <div>{testDefinition.title}</div>
         </div>
         <WidgetComponent
+          key={item.id}
           definition={item as any}
+          initialAnswer={initialAnswer}
           onAnswer={(value: unknown) => handleSubmit(item.id, item.widgetType, value)}
         />
         {error ? <p style={{ color: 'crimson', marginTop: 12 }}>{error}</p> : null}

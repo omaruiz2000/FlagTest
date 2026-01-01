@@ -34,3 +34,26 @@ export async function getEvaluationWithTests(evaluationId: string) {
 
   return { ...evaluation, tests };
 }
+
+export async function findEvaluationTestStatuses(
+  evaluationId: string,
+  participantId: string,
+  testDefinitionIds: string[],
+) {
+  if (!participantId || testDefinitionIds.length === 0) {
+    return {} as Record<string, string>;
+  }
+
+  const attemptKeys = testDefinitionIds.map((testId) => `open:${evaluationId}:${participantId}:${testId}`);
+  const sessions = await prisma.testSession.findMany({
+    where: { attemptKey: { in: attemptKeys } },
+    select: { attemptKey: true, status: true },
+  });
+
+  return sessions.reduce<Record<string, string>>((acc, session) => {
+    const segments = session.attemptKey.split(':');
+    const testId = segments[segments.length - 1];
+    acc[testId] = session.status;
+    return acc;
+  }, {});
+}

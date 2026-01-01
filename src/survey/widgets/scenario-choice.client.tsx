@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ScenarioChoiceItem, ScenarioChoiceOption } from '../schema';
 import type { ScenarioChoiceAnswer } from './scenario-choice.logic';
 import styles from './scenario-choice.module.css';
@@ -14,8 +14,20 @@ function OptionButton({ option, selected, onSelect }: { option: ScenarioChoiceOp
   );
 }
 
-export function ScenarioChoiceWidget({ definition, onAnswer }: { definition: ScenarioChoiceItem; onAnswer?: (value: ScenarioChoiceAnswer) => void }) {
-  const [selected, setSelected] = useState<string | null>(null);
+export function ScenarioChoiceWidget({
+  definition,
+  initialAnswer,
+  onAnswer,
+}: {
+  definition: ScenarioChoiceItem;
+  initialAnswer?: ScenarioChoiceAnswer | null;
+  onAnswer?: (value: ScenarioChoiceAnswer) => void;
+}) {
+  const [selected, setSelected] = useState<string | null>(initialAnswer?.optionId ?? null);
+
+  useEffect(() => {
+    setSelected(initialAnswer?.optionId ?? null);
+  }, [initialAnswer?.optionId]);
 
   const handleSelect = (optionId: string) => {
     setSelected(optionId);

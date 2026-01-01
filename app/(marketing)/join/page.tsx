@@ -1,5 +1,6 @@
+import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { getEvaluationWithTests } from '@/src/db/repositories/evaluations';
+import { getEvaluationWithTests, findEvaluationTestStatuses } from '@/src/db/repositories/evaluations';
 import { CodeJoinForm } from './CodeJoinForm';
 import { JoinButtons } from './JoinButtons';
 
@@ -30,6 +31,15 @@ export default async function JoinPage({ searchParams }: JoinPageProps) {
     title: evaluationTest.testDefinition.title,
   }));
 
+  const participantId = cookies().get(`ft_pid_${evaluation.id}`)?.value;
+  const statusMap = participantId
+    ? await findEvaluationTestStatuses(
+        evaluation.id,
+        participantId,
+        evaluation.tests.map((test) => test.testDefinition.id),
+      )
+    : {};
+
   const visibleTests = selectedTestId
     ? tests.filter((test) => test.id === selectedTestId)
     : tests;
@@ -51,6 +61,7 @@ export default async function JoinPage({ searchParams }: JoinPageProps) {
         evaluationId={evaluation.id}
         tests={visibleTests.length ? visibleTests : tests}
         selectedTestId={selectedTestId}
+        statusMap={statusMap}
       />
     </main>
   );

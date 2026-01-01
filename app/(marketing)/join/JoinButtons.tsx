@@ -14,12 +14,13 @@ type Props = {
   evaluationId: string;
   tests: TestInfo[];
   selectedTestId?: string;
+  statusMap?: Record<string, string>;
 };
 
-export function JoinButtons({ evaluationId, tests, selectedTestId }: Props) {
+export function JoinButtons({ evaluationId, tests, selectedTestId, statusMap = {} }: Props) {
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
-  const [completed, setCompleted] = useState<Record<string, boolean>>({});
+  const [statuses, setStatuses] = useState<Record<string, string>>(statusMap);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleJoin = async (testId: string) => {
@@ -27,10 +28,11 @@ export function JoinButtons({ evaluationId, tests, selectedTestId }: Props) {
     setErrors((prev) => ({ ...prev, [testId]: '' }));
     try {
       const result = await joinEvaluationTest(evaluationId, testId);
+      setStatuses((prev) => ({ ...prev, [testId]: result.status ?? 'ACTIVE' }));
       router.push(`/t/${result.sessionId}`);
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
-        setCompleted((prev) => ({ ...prev, [testId]: true }));
+        setStatuses((prev) => ({ ...prev, [testId]: 'COMPLETED' }));
         return;
       }
       const message = error instanceof Error ? error.message : 'Unable to start';
@@ -44,7 +46,11 @@ export function JoinButtons({ evaluationId, tests, selectedTestId }: Props) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {tests.map((test) => {
         const isSelected = selectedTestId === test.id;
-        const isCompleted = completed[test.id];
+        const status = statuses[test.id];
+        const isCompleted = status === 'COMPLETED';
+        const isActive = status === 'ACTIVE';
+        const isCreated = status === 'CREATED';
+        const label = isCompleted ? 'Completed' : isActive ? 'Continue' : isCreated ? 'Start' : 'Start';
         return (
           <div
             key={test.id}
@@ -76,7 +82,7 @@ export function JoinButtons({ evaluationId, tests, selectedTestId }: Props) {
                   minWidth: 120,
                 }}
               >
-                {isCompleted ? 'Completed' : loadingId === test.id ? 'Joining…' : 'Start'}
+                {isCompleted ? 'Completed' : loadingId === test.id ? 'Joining…' : label}
               </button>
             </div>
             {errors[test.id] ? (
