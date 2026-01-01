@@ -1,6 +1,8 @@
 import { User } from '@prisma/client';
+import { redirect } from 'next/navigation';
+import { requireUser } from './session';
 
-function normalizedAdmins() {
+export function parseAdminEmails() {
   const raw = process.env.ADMIN_EMAILS || '';
   return raw
     .split(',')
@@ -8,8 +10,17 @@ function normalizedAdmins() {
     .filter(Boolean);
 }
 
-export function isSystemAdmin(user: Pick<User, 'email'>) {
-  if (!user.email) return false;
-  const admins = normalizedAdmins();
+export function isPlatformAdmin(user?: Pick<User, 'email'> | null) {
+  if (!user?.email) return false;
+  const admins = parseAdminEmails();
+  if (!admins.length) return false;
   return admins.includes(user.email.toLowerCase());
+}
+
+export async function requirePlatformAdmin() {
+  const user = await requireUser();
+  if (!isPlatformAdmin(user)) {
+    redirect('/app?message=not-authorized');
+  }
+  return user;
 }

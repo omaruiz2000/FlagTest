@@ -5,7 +5,7 @@ import styles from './styles.module.css';
 
 async function loadEvaluations(ownerId: string) {
   return prisma.evaluation.findMany({
-    where: { ownerUserId: ownerId },
+    where: { ownerUserId: ownerId, deletedAt: null },
     orderBy: { createdAt: 'desc' },
     select: { id: true, name: true, description: true },
   });

@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { prisma } from '@/src/db/prisma';
-import { requireUser } from '@/src/auth/session';
-import { isSystemAdmin } from '@/src/auth/admin';
+import { requirePlatformAdmin } from '@/src/auth/admin';
 import styles from '../../evaluations/styles.module.css';
 
 async function loadTests() {
@@ -9,15 +8,7 @@ async function loadTests() {
 }
 
 export default async function AdminTestsPage() {
-  const user = await requireUser();
-  if (!isSystemAdmin(user)) {
-    return (
-      <section className={styles.card}>
-        <h2>Tests</h2>
-        <p className={styles.helper}>Not authorized.</p>
-      </section>
-    );
-  }
+  await requirePlatformAdmin();
 
   const tests = await loadTests();
 

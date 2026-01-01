@@ -1,8 +1,7 @@
 import Link from 'next/link';
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/src/db/prisma';
-import { requireUser } from '@/src/auth/session';
-import { isSystemAdmin } from '@/src/auth/admin';
+import { requirePlatformAdmin } from '@/src/auth/admin';
 import styles from '../../evaluations/styles.module.css';
 
 async function loadSets() {
@@ -15,8 +14,7 @@ async function loadSets() {
 async function createSet(formData: FormData) {
   'use server';
 
-  const user = await requireUser();
-  if (!isSystemAdmin(user)) return;
+  await requirePlatformAdmin();
 
   const slug = String(formData.get('slug') || '').trim();
   const title = String(formData.get('title') || '').trim();
@@ -29,8 +27,7 @@ async function createSet(formData: FormData) {
 async function toggleSet(formData: FormData) {
   'use server';
 
-  const user = await requireUser();
-  if (!isSystemAdmin(user)) return;
+  await requirePlatformAdmin();
 
   const id = String(formData.get('id') || '');
   const isActive = formData.get('isActive') === 'true';
@@ -41,15 +38,7 @@ async function toggleSet(formData: FormData) {
 }
 
 export default async function CamouflageAdminPage() {
-  const user = await requireUser();
-  if (!isSystemAdmin(user)) {
-    return (
-      <section className={styles.card}>
-        <h2>Camouflage</h2>
-        <p className={styles.helper}>Not authorized.</p>
-      </section>
-    );
-  }
+  await requirePlatformAdmin();
 
   const sets = await loadSets();
 

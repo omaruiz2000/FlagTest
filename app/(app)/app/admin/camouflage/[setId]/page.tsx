@@ -1,8 +1,7 @@
 import { revalidatePath } from 'next/cache';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/src/db/prisma';
-import { requireUser } from '@/src/auth/session';
-import { isSystemAdmin } from '@/src/auth/admin';
+import { requirePlatformAdmin } from '@/src/auth/admin';
 import styles from '../../../evaluations/styles.module.css';
 
 async function loadSet(setId: string) {
@@ -17,8 +16,7 @@ async function loadSet(setId: string) {
 async function addCharacter(formData: FormData) {
   'use server';
 
-  const user = await requireUser();
-  if (!isSystemAdmin(user)) return;
+  await requirePlatformAdmin();
 
   const setId = String(formData.get('setId') || '');
   const key = String(formData.get('key') || '').trim();
@@ -40,8 +38,7 @@ async function addCharacter(formData: FormData) {
 async function updateCharacter(formData: FormData) {
   'use server';
 
-  const user = await requireUser();
-  if (!isSystemAdmin(user)) return;
+  await requirePlatformAdmin();
 
   const id = String(formData.get('id') || '');
   const setId = String(formData.get('setId') || '');
@@ -62,8 +59,7 @@ async function updateCharacter(formData: FormData) {
 async function deleteCharacter(formData: FormData) {
   'use server';
 
-  const user = await requireUser();
-  if (!isSystemAdmin(user)) return;
+  await requirePlatformAdmin();
 
   const id = String(formData.get('id') || '');
   const setId = String(formData.get('setId') || '');
@@ -74,15 +70,7 @@ async function deleteCharacter(formData: FormData) {
 }
 
 export default async function CamouflageSetDetail({ params }: { params: { setId: string } }) {
-  const user = await requireUser();
-  if (!isSystemAdmin(user)) {
-    return (
-      <section className={styles.card}>
-        <h2>Camouflage</h2>
-        <p className={styles.helper}>Not authorized.</p>
-      </section>
-    );
-  }
+  await requirePlatformAdmin();
 
   const set = await loadSet(params.setId);
   if (!set) {

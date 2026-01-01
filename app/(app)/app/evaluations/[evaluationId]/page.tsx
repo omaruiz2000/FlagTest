@@ -11,7 +11,7 @@ const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 async function loadEvaluation(evaluationId: string, ownerId: string) {
   return prisma.evaluation.findFirst({
-    where: { id: evaluationId, ownerUserId: ownerId },
+    where: { id: evaluationId, ownerUserId: ownerId, deletedAt: null },
     include: {
       tests: {
         orderBy: { sortOrder: 'asc' },

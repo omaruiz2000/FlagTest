@@ -44,6 +44,7 @@ model User {
   createdGroups    Group[]        @relation("CreatedGroups")
   groupMemberships GroupMember[]  @relation("GroupMemberships")
   ownedEvaluations Evaluation[]   @relation("EvaluationOwner")
+  deletedEvaluations Evaluation[] @relation("EvaluationDeletedBy")
 }
 
 model AuthSession {
@@ -92,11 +93,18 @@ model Evaluation {
   organizationId String?
   ownerUser      User?              @relation("EvaluationOwner", fields: [ownerUserId], references: [id])
   ownerUserId    String?
+  deletedAt      DateTime?
+  deletedBy      User?              @relation("EvaluationDeletedBy", fields: [deletedById], references: [id])
+  deletedById    String?
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
   sessions       TestSession[]
   tests          EvaluationTest[]
   invites        EvaluationInvite[]
+
+  @@index([deletedAt])
+  @@index([ownerUserId])
+  @@index([organizationId])
 }
 
 model EvaluationInvite {

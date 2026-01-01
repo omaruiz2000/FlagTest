@@ -10,7 +10,7 @@ Foundation scaffold for FlagTest, a Next.js + Postgres product for running gamif
 - CSS Modules for light styling
 
 ## Getting started
-1. Copy `.env.example` to `.env` and update values.
+1. Copy `.env.example` to `.env` and update values. Keep `ADMIN_EMAILS` set to the accounts that should have platform admin access (dev default: `admin@example.com`).
 2. Start Postgres (optional helper):
    ```bash
    docker compose up -d db
