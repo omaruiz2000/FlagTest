@@ -4,6 +4,7 @@ import { prisma } from '@/src/db/prisma';
 import { requireUser } from '@/src/auth/session';
 import { CopyInviteLinksButton } from './InviteActions';
 import { FeedbackModeForm } from './FeedbackModeForm';
+import { CamouflageSetSelect } from '../CamouflageSetSelect';
 import styles from '../styles.module.css';
 
 const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -14,7 +15,21 @@ async function loadEvaluation(evaluationId: string, ownerId: string) {
     include: {
       tests: {
         orderBy: { sortOrder: 'asc' },
-        include: { testDefinition: { select: { id: true, title: true, description: true } } },
+        include: {
+          testDefinition: {
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              camouflageOptions: {
+                where: { isActive: true },
+                orderBy: { sortOrder: 'asc' },
+                include: { camouflageSet: { select: { id: true, title: true, slug: true } } },
+              },
+            },
+          },
+          camouflageSet: { select: { id: true, title: true, slug: true } },
+        },
       },
       invites: {
         orderBy: { createdAt: 'asc' },
@@ -175,6 +190,22 @@ export default async function EvaluationPage({ params }: { params: { evaluationI
                   Join link: <Link href={joinHref}>{joinHref}</Link>
                 </li>
               </ul>
+              {evaluation.participantFeedbackMode === 'CAMOUFLAGE' ? (
+                item.testDefinition.camouflageOptions.length ? (
+                  <CamouflageSetSelect
+                    evaluationId={evaluation.id}
+                    evaluationTestId={item.id}
+                    initialSetId={item.camouflageSet?.id}
+                    options={item.testDefinition.camouflageOptions.map((option) => ({
+                      id: option.camouflageSetId,
+                      title: option.camouflageSet.title,
+                      slug: option.camouflageSet.slug,
+                    }))}
+                  />
+                ) : (
+                  <p className={styles.helper}>Sin sets de camuflaje activos para este test.</p>
+                )
+              ) : null}
             </div>
           );
         })}

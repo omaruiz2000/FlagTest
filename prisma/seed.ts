@@ -107,6 +107,84 @@ async function main() {
     },
   });
 
+  const explorationSet = await prisma.camouflageSet.upsert({
+    where: { slug: 'exploradores' },
+    update: { title: 'Exploradores' },
+    create: {
+      slug: 'exploradores',
+      title: 'Exploradores',
+    },
+  });
+
+  const teamworkSet = await prisma.camouflageSet.upsert({
+    where: { slug: 'aliados' },
+    update: { title: 'Aliados' },
+    create: {
+      slug: 'aliados',
+      title: 'Aliados',
+    },
+  });
+
+  const explorationCharacters = [
+    { key: 'farero', title: 'El Farero', imageUrl: 'https://example.com/farero.png', sortOrder: 0 },
+    { key: 'cartografo', title: 'La Cartógrafa', imageUrl: 'https://example.com/cartografa.png', sortOrder: 1 },
+    { key: 'vigia', title: 'El Vigía', imageUrl: 'https://example.com/vigia.png', sortOrder: 2 },
+  ];
+
+  const teamworkCharacters = [
+    { key: 'compas', title: 'La Brújula', imageUrl: 'https://example.com/brujula.png', sortOrder: 0 },
+    { key: 'puente', title: 'El Puente', imageUrl: 'https://example.com/puente.png', sortOrder: 1 },
+    { key: 'ancla', title: 'El Ancla', imageUrl: 'https://example.com/ancla.png', sortOrder: 2 },
+  ];
+
+  await Promise.all(
+    explorationCharacters.map((character) =>
+      prisma.camouflageCharacter.upsert({
+        where: {
+          setId_key: {
+            setId: explorationSet.id,
+            key: character.key,
+          },
+        },
+        update: { title: character.title, imageUrl: character.imageUrl, sortOrder: character.sortOrder },
+        create: { ...character, setId: explorationSet.id },
+      }),
+    ),
+  );
+
+  await Promise.all(
+    teamworkCharacters.map((character) =>
+      prisma.camouflageCharacter.upsert({
+        where: {
+          setId_key: {
+            setId: teamworkSet.id,
+            key: character.key,
+          },
+        },
+        update: { title: character.title, imageUrl: character.imageUrl, sortOrder: character.sortOrder },
+        create: { ...character, setId: teamworkSet.id },
+      }),
+    ),
+  );
+
+  await Promise.all(
+    [
+      { testDefinitionId: testDefinition.id, camouflageSetId: explorationSet.id, sortOrder: 0 },
+      { testDefinitionId: testDefinition.id, camouflageSetId: teamworkSet.id, sortOrder: 1 },
+    ].map((option) =>
+      prisma.testCamouflageOption.upsert({
+        where: {
+          testDefinitionId_camouflageSetId: {
+            testDefinitionId: option.testDefinitionId,
+            camouflageSetId: option.camouflageSetId,
+          },
+        },
+        update: { sortOrder: option.sortOrder, isActive: true },
+        create: option,
+      }),
+    ),
+  );
+
   await prisma.evaluation.upsert({
     where: { id: 'demo-evaluation' },
     update: {
@@ -132,11 +210,13 @@ async function main() {
     },
     update: {
       sortOrder: 1,
+      camouflageSetId: explorationSet.id,
     },
     create: {
       evaluationId: 'demo-evaluation',
       testDefinitionId: testDefinition.id,
       sortOrder: 1,
+      camouflageSetId: explorationSet.id,
     },
   });
 

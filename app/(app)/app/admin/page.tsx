@@ -23,6 +23,12 @@ export default async function AdminPage() {
         <li>
           <Link href="/app/packages">Manage packages</Link>
         </li>
+        <li>
+          <Link href="/app/admin/camouflage">Camouflage sets</Link>
+        </li>
+        <li>
+          <Link href="/app/admin/tests">Test configuration</Link>
+        </li>
       </ul>
     </section>
   );

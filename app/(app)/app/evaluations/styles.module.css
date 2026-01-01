@@ -80,6 +80,21 @@
   color: #64748b;
 }
 
+.inlineForm {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.tableInput {
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  width: 100%;
+}
+
 .testList {
   display: flex;
   flex-direction: column;

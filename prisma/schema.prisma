@@ -136,6 +136,7 @@ model TestDefinition {
   evaluationTests EvaluationTest[]
   packageItems    TestPackageItem[]
   sessions        TestSession[]
+  camouflageOptions TestCamouflageOption[]
 
   @@unique([slug, version])
 }
@@ -200,10 +201,51 @@ model EvaluationTest {
   testDefinition   TestDefinition @relation(fields: [testDefinitionId], references: [id], onDelete: Cascade)
   testDefinitionId String
   sortOrder        Int            @default(0)
+  camouflageSet    CamouflageSet? @relation(fields: [camouflageSetId], references: [id], onDelete: SetNull)
+  camouflageSetId  String?
 
   @@unique([evaluationId, testDefinitionId])
   @@index([evaluationId, sortOrder])
   @@index([testDefinitionId])
+  @@index([camouflageSetId])
+}
+
+model CamouflageSet {
+  id        String                 @id @default(cuid())
+  slug      String                 @unique
+  title     String
+  isActive  Boolean                @default(true)
+  createdAt DateTime               @default(now())
+  characters CamouflageCharacter[]
+  options   TestCamouflageOption[]
+  evaluationTests EvaluationTest[]
+}
+
+model CamouflageCharacter {
+  id        String   @id @default(cuid())
+  set       CamouflageSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+  setId     String
+  key       String
+  title     String
+  imageUrl  String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@unique([setId, key])
+}
+
+model TestCamouflageOption {
+  id               String          @id @default(cuid())
+  testDefinition   TestDefinition  @relation(fields: [testDefinitionId], references: [id], onDelete: Cascade)
+  testDefinitionId String
+  camouflageSet    CamouflageSet   @relation(fields: [camouflageSetId], references: [id], onDelete: Cascade)
+  camouflageSetId  String
+  isActive         Boolean         @default(true)
+  sortOrder        Int             @default(0)
+
+  @@unique([testDefinitionId, camouflageSetId])
+  @@index([testDefinitionId])
+  @@index([camouflageSetId])
 }
 
 model Answer {

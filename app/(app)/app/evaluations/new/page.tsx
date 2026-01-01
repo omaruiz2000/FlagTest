@@ -20,6 +20,24 @@ const createEvaluationSchema = z.object({
   }
 });
 
+function chooseDefaultCamouflageSets(
+  orderedTests: string[],
+  options: { testDefinitionId: string; camouflageSetId: string }[],
+) {
+  const used = new Set<string>();
+  return orderedTests.reduce<Record<string, string | null>>((acc, testId) => {
+    const allowed = options.filter((option) => option.testDefinitionId === testId);
+    if (!allowed.length) {
+      acc[testId] = null;
+      return acc;
+    }
+    const pick = allowed.find((option) => !used.has(option.camouflageSetId)) ?? allowed[0];
+    used.add(pick.camouflageSetId);
+    acc[testId] = pick.camouflageSetId;
+    return acc;
+  }, {});
+}
+
 async function loadPackages() {
   return prisma.testPackage.findMany({
     where: { isActive: true },
@@ -85,6 +103,19 @@ async function createEvaluationAction(formData: FormData) {
   }
 
   const orderedTests = packageItems.map((item) => item.testDefinitionId);
+  const allowedCamouflageOptions =
+    feedbackMode === 'CAMOUFLAGE'
+      ? await prisma.testCamouflageOption.findMany({
+          where: { testDefinitionId: { in: orderedTests }, isActive: true },
+          orderBy: { sortOrder: 'asc' },
+          select: { testDefinitionId: true, camouflageSetId: true },
+        })
+      : [];
+
+  const defaultCamouflageByTest =
+    feedbackMode === 'CAMOUFLAGE'
+      ? chooseDefaultCamouflageSets(orderedTests, allowedCamouflageOptions)
+      : {};
   const evaluation = await prisma.evaluation.create({
     data: {
       name: evalName,
@@ -99,6 +130,8 @@ async function createEvaluationAction(formData: FormData) {
       evaluationId: evaluation.id,
       testDefinitionId,
       sortOrder: index,
+      camouflageSetId:
+        feedbackMode === 'CAMOUFLAGE' ? defaultCamouflageByTest[testDefinitionId] ?? null : null,
     })),
   });
 
