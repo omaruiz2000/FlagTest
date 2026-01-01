@@ -78,18 +78,18 @@ model OrgMember {
 }
 
 model Evaluation {
-  id               String           @id @default(cuid())
-  name             String
-  description      String?
-  status           EvaluationStatus @default(DRAFT)
-  organization     Organization?    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  organizationId   String?
-  ownerUser        User?            @relation("EvaluationOwner", fields: [ownerUserId], references: [id])
-  ownerUserId      String?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  sessions         TestSession[]
-  tests            EvaluationTest[]
+  id             String           @id @default(cuid())
+  name           String
+  description    String?
+  status         EvaluationStatus @default(DRAFT)
+  organization   Organization?    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String?
+  ownerUser      User?            @relation("EvaluationOwner", fields: [ownerUserId], references: [id])
+  ownerUserId    String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  sessions       TestSession[]
+  tests          EvaluationTest[]
 }
 
 model StudentRecord {
@@ -105,18 +105,18 @@ model StudentRecord {
 }
 
 model TestDefinition {
-  id          String        @id @default(cuid())
-  slug        String
-  version     Int
-  title       String
-  description String?
-  styleId     String        @default("classic")
-  definition  Json
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id              String            @id @default(cuid())
+  slug            String
+  version         Int
+  title           String
+  description     String?
+  styleId         String            @default("classic")
+  definition      Json
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
   evaluationTests EvaluationTest[]
   packageItems    TestPackageItem[]
-  sessions    TestSession[]
+  sessions        TestSession[]
 
   @@unique([slug, version])
 }
