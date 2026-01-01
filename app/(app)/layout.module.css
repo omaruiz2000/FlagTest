@@ -37,6 +37,21 @@
   background: #e2e8f0;
 }
 
+.navButton {
+  padding: 8px 10px;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.navButton:hover {
+  background: #e2e8f0;
+}
+
 .main {
   max-width: 960px;
   margin: 0 auto;
