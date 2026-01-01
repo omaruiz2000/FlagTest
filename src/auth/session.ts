@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import crypto from 'crypto';
 import argon2 from 'argon2';
 import { getEnv } from '../env';
-import { createSession, deleteSessionByTokenHash, findSessionWithUserByTokenHash, touchSession } from '../db/repositories/authSessions';
+import { createSession, deleteSessionByTokenHash, findSessionWithUserByTokenHash } from '../db/repositories/authSessions';
 import { findUserById } from '../db/repositories/users';
 
 const SESSION_COOKIE = 'ft_session';
@@ -75,17 +75,13 @@ export async function getUser() {
   const tokenHash = hashSessionToken(token, AUTH_SECRET);
   const session = await findSessionWithUserByTokenHash(tokenHash);
   if (!session) {
-    clearSessionCookie();
     return null;
   }
 
   if (session.expiresAt.getTime() < Date.now()) {
-    await deleteSessionByTokenHash(tokenHash);
-    clearSessionCookie();
     return null;
   }
 
-  await touchSession(session.id);
   return session.user;
 }
 
@@ -96,7 +92,6 @@ export async function requireUser() {
   }
   const persisted = await findUserById(user.id);
   if (!persisted) {
-    await signOut();
     redirect('/auth/login');
   }
   return persisted;
