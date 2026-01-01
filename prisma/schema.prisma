@@ -167,6 +167,7 @@ model TestPackageItem {
   isFree           Boolean        @default(false)
 
   @@unique([testPackageId, testDefinitionId])
+  @@index([testPackageId, sortOrder])
   @@index([testDefinitionId])
 }
 
@@ -179,6 +180,7 @@ model EvaluationTest {
   sortOrder        Int            @default(0)
 
   @@unique([evaluationId, testDefinitionId])
+  @@index([evaluationId, sortOrder])
   @@index([testDefinitionId])
 }
 
