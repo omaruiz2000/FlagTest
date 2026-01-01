@@ -109,14 +109,92 @@ async function main() {
 
   await prisma.evaluation.upsert({
     where: { id: 'demo-evaluation' },
-    update: {},
+    update: {
+      organizationId: organization.id,
+    },
     create: {
       id: 'demo-evaluation',
       name: 'Demo Evaluation',
       description: 'Example evaluation seeded for development.',
       status: EvaluationStatus.DRAFT,
       organizationId: organization.id,
+    },
+  });
+
+  await prisma.evaluationTest.upsert({
+    where: {
+      evaluationId_testDefinitionId: {
+        evaluationId: 'demo-evaluation',
+        testDefinitionId: testDefinition.id,
+      },
+    },
+    update: {
+      sortOrder: 1,
+    },
+    create: {
+      evaluationId: 'demo-evaluation',
       testDefinitionId: testDefinition.id,
+      sortOrder: 1,
+    },
+  });
+
+  const friendsPackage = await prisma.testPackage.upsert({
+    where: { slug: 'friends' },
+    update: {},
+    create: {
+      slug: 'friends',
+      title: 'Friends Bundle',
+      description: 'Curated activities for friends.',
+      context: 'friends',
+    },
+  });
+
+  const couplesPackage = await prisma.testPackage.upsert({
+    where: { slug: 'couples' },
+    update: {},
+    create: {
+      slug: 'couples',
+      title: 'Couples Bundle',
+      description: 'Conversation starters for couples.',
+      context: 'couples',
+    },
+  });
+
+  await prisma.testPackageItem.upsert({
+    where: {
+      testPackageId_testDefinitionId: {
+        testPackageId: friendsPackage.id,
+        testDefinitionId: testDefinition.id,
+      },
+    },
+    update: {
+      sortOrder: 1,
+      isFree: true,
+    },
+    create: {
+      testPackageId: friendsPackage.id,
+      testDefinitionId: testDefinition.id,
+      sortOrder: 1,
+      isFree: true,
+    },
+  });
+
+  await prisma.testPackageItem.upsert({
+    where: {
+      testPackageId_testDefinitionId: {
+        testPackageId: couplesPackage.id,
+        testDefinitionId: testDefinition.id,
+      },
+    },
+    update: {
+      sortOrder: 1,
+      isFree: false,
+    },
+    create: {
+      testPackageId: couplesPackage.id,
+      testDefinitionId: testDefinition.id,
+      sortOrder: 1,
+      isFree: false,
     },
   });
 
