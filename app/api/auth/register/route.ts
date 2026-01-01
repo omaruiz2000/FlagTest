@@ -11,10 +11,20 @@ const registerSchema = z.object({
 async function parseBody(request: Request) {
   const contentType = request.headers.get('content-type') || '';
   if (contentType.includes('application/json')) {
-    return request.json();
+    try {
+      return await request.json();
+    } catch (error) {
+      return {};
+    }
   }
   const form = await request.formData();
-  return Object.fromEntries(form.entries());
+  const result: Record<string, string> = {};
+  form.forEach((value, key) => {
+    if (typeof value === 'string') {
+      result[key] = value;
+    }
+  });
+  return result;
 }
 
 export async function POST(request: Request) {
@@ -24,15 +34,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
   }
 
-  const existing = await findUserByEmail(parsed.data.email.toLowerCase());
+  const normalizedEmail = parsed.data.email.toLowerCase();
+  const existing = await findUserByEmail(normalizedEmail);
   if (existing) {
     return NextResponse.json({ error: 'Account already exists' }, { status: 409 });
   }
 
   const passwordHash = await hashPassword(parsed.data.password);
-  const user = await createUser(parsed.data.email.toLowerCase(), passwordHash);
+  const user = await createUser(normalizedEmail, passwordHash);
   await signIn(user.id, readRequestMetadata());
 
-  const redirectUrl = new URL('/app', request.url);
-  return NextResponse.redirect(redirectUrl);
+  return NextResponse.json({ message: 'Registered' });
 }

@@ -11,10 +11,20 @@ const loginSchema = z.object({
 async function parseBody(request: Request) {
   const contentType = request.headers.get('content-type') || '';
   if (contentType.includes('application/json')) {
-    return request.json();
+    try {
+      return await request.json();
+    } catch (error) {
+      return {};
+    }
   }
   const form = await request.formData();
-  return Object.fromEntries(form.entries());
+  const result: Record<string, string> = {};
+  form.forEach((value, key) => {
+    if (typeof value === 'string') {
+      result[key] = value;
+    }
+  });
+  return result;
 }
 
 export async function POST(request: Request) {
@@ -24,16 +34,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
   }
 
-  const user = await findUserByEmail(parsed.data.email.toLowerCase());
+  const normalizedEmail = parsed.data.email.toLowerCase();
+  const user = await findUserByEmail(normalizedEmail);
   if (!user) {
-    return NextResponse.redirect(new URL('/auth/login?error=Account%20not%20found', request.url));
+    return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
   }
 
   const valid = await verifyPassword(user.passwordHash, parsed.data.password);
   if (!valid) {
-    return NextResponse.redirect(new URL('/auth/login?error=Invalid%20credentials', request.url));
+    return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
   }
 
   await signIn(user.id, readRequestMetadata());
-  return NextResponse.redirect(new URL('/app', request.url));
+  return NextResponse.json({ message: 'Logged in' });
 }
