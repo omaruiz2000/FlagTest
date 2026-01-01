@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/src/db/prisma';
@@ -35,6 +36,10 @@ export async function POST(request: Request, { params }: { params: { sessionId: 
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
+  if (session.status === 'COMPLETED' || session.status === 'CANCELLED') {
+    return NextResponse.json({ error: 'Session closed' }, { status: 409 });
+  }
+
   const testDefinition = validateTestDefinition(session.testDefinition.definition);
   const item = testDefinition.items.find((entry) => entry.id === parsed.data.questionId);
 
@@ -52,7 +57,18 @@ export async function POST(request: Request, { params }: { params: { sessionId: 
     return NextResponse.json({ error: 'Invalid answer' }, { status: 400 });
   }
 
+  const now = new Date();
+
   const { updatedScores, status } = await prisma.$transaction(async (tx) => {
+    const sessionUpdateData: Prisma.TestSessionUpdateInput = { lastSeenAt: now };
+    let nextStatus = session.status;
+
+    if (session.status === 'CREATED') {
+      nextStatus = 'ACTIVE';
+      sessionUpdateData.status = 'ACTIVE';
+      sessionUpdateData.startedAt = session.startedAt ?? now;
+    }
+
     await tx.answer.upsert({
       where: { testSessionId_questionId: { testSessionId: params.sessionId, questionId: parsed.data.questionId } },
       update: { payload: answerValidation.data },
@@ -101,14 +117,15 @@ export async function POST(request: Request, { params }: { params: { sessionId: 
 
     const completed = answers.length >= testDefinition.items.length;
     if (completed) {
-      await tx.testSession.update({
-        where: { id: params.sessionId },
-        data: { status: 'COMPLETED', completedAt: new Date() },
-      });
+      nextStatus = 'COMPLETED';
+      sessionUpdateData.status = 'COMPLETED';
+      sessionUpdateData.completedAt = now;
     }
 
+    await tx.testSession.update({ where: { id: params.sessionId }, data: sessionUpdateData });
+
     const scores = await tx.score.findMany({ where: { testSessionId: params.sessionId } });
-    return { updatedScores: scores, status: completed ? 'COMPLETED' : session.status };
+    return { updatedScores: scores, status: nextStatus };
   });
 
   return NextResponse.json({ ok: true, scores: updatedScores, status });

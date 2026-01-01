@@ -121,6 +121,7 @@ model TestDefinition {
 model TestSession {
   id                   String            @id @default(cuid())
   status               TestSessionStatus @default(CREATED)
+  attemptKey           String            @unique
   testDefinition       TestDefinition    @relation(fields: [testDefinitionId], references: [id])
   testDefinitionId     String
   participantTokenHash String?
@@ -135,6 +136,7 @@ model TestSession {
   startedAt            DateTime?
   completedAt          DateTime?
   createdAt            DateTime          @default(now())
+  lastSeenAt           DateTime          @default(now())
   answers              Answer[]
   scores               Score[]
 

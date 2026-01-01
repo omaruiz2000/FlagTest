@@ -31,18 +31,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'No demo test available' }, { status: 500 });
   }
 
+  const attemptKey = `student:${studentRecord?.id ?? 'demo'}:test:${testDefinition.id}:eval:${'none'}`;
+  const existingSession = await prisma.testSession.findUnique({ where: { attemptKey } });
+
+  if (existingSession?.status === 'COMPLETED') {
+    return NextResponse.json({ error: 'Already completed' }, { status: 409 });
+  }
+
   const token = generateParticipantToken();
   const tokenHash = hashParticipantToken(token);
 
-  const session = await prisma.testSession.create({
-    data: {
-      status: 'ACTIVE',
-      startedAt: new Date(),
-      participantTokenHash: tokenHash,
-      testDefinitionId: testDefinition.id,
-      studentRecordId: studentRecord?.id,
-    },
-  });
+  const session = existingSession
+    ? await prisma.testSession.update({
+        where: { id: existingSession.id },
+        data: { participantTokenHash: tokenHash, lastSeenAt: new Date() },
+      })
+    : await prisma.testSession.create({
+        data: {
+          attemptKey,
+          participantTokenHash: tokenHash,
+          testDefinitionId: testDefinition.id,
+          studentRecordId: studentRecord?.id,
+        },
+      });
 
   setParticipantCookie(session.id, token);
 
