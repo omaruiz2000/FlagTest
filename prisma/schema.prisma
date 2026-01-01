@@ -78,28 +78,28 @@ model OrgMember {
 }
 
 model Evaluation {
-  id             String           @id @default(cuid())
+  id             String             @id @default(cuid())
   name           String
   description    String?
-  status         EvaluationStatus @default(DRAFT)
-  organization   Organization?    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  status         EvaluationStatus   @default(DRAFT)
+  organization   Organization?      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   organizationId String?
-  ownerUser      User?            @relation("EvaluationOwner", fields: [ownerUserId], references: [id])
+  ownerUser      User?              @relation("EvaluationOwner", fields: [ownerUserId], references: [id])
   ownerUserId    String?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
   sessions       TestSession[]
   tests          EvaluationTest[]
   invites        EvaluationInvite[]
 }
 
 model EvaluationInvite {
-  id           String      @id @default(cuid())
-  evaluation   Evaluation  @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  id           String        @id @default(cuid())
+  evaluation   Evaluation    @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
   evaluationId String
-  code         String      @unique
+  code         String        @unique
   label        String?
-  createdAt    DateTime    @default(now())
+  createdAt    DateTime      @default(now())
   sessions     TestSession[]
 
   @@index([evaluationId])
