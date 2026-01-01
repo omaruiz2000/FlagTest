@@ -26,7 +26,8 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
     setError(null);
     try {
       await signIn({ email, password });
-      router.push(returnTo || '/app');
+      router.replace(returnTo || '/app');
+      router.refresh();
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message || 'Unable to sign in');

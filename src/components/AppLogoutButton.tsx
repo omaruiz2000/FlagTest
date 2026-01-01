@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { signOut } from '@/src/services/auth';
 
-export function LogoutButton({ className }: { className?: string }) {
+export function AppLogoutButton({ className }: { className?: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -15,7 +15,8 @@ export function LogoutButton({ className }: { className?: string }) {
     } catch (error) {
       // Swallow errors and continue to redirect to login.
     } finally {
-      router.push('/app/auth/login');
+      router.replace('/app/auth/login');
+      router.refresh();
       setLoading(false);
     }
   };

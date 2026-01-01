@@ -27,6 +27,16 @@
   font-size: 14px;
 }
 
+.authGroup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.userEmail {
+  font-weight: 500;
+}
+
 .nav a {
   padding: 8px 10px;
   border-radius: 6px;

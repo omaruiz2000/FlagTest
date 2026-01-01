@@ -4,9 +4,9 @@ import { prisma } from '@/src/db/prisma';
 import { requireUser } from '@/src/auth/session';
 import styles from '../styles.module.css';
 
-async function loadEvaluation(evaluationId: string) {
-  return prisma.evaluation.findUnique({
-    where: { id: evaluationId },
+async function loadEvaluation(evaluationId: string, ownerId: string) {
+  return prisma.evaluation.findFirst({
+    where: { id: evaluationId, ownerUserId: ownerId },
     include: {
       tests: {
         orderBy: { sortOrder: 'asc' },
@@ -17,8 +17,8 @@ async function loadEvaluation(evaluationId: string) {
 }
 
 export default async function EvaluationPage({ params }: { params: { evaluationId: string } }) {
-  await requireUser();
-  const evaluation = await loadEvaluation(params.evaluationId);
+  const user = await requireUser();
+  const evaluation = await loadEvaluation(params.evaluationId, user.id);
 
   if (!evaluation) {
     notFound();

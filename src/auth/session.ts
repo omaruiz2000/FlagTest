@@ -88,11 +88,11 @@ export async function getUser() {
 export async function requireUser() {
   const user = await getUser();
   if (!user) {
-    redirect('/auth/login');
+    redirect('/app/auth/login');
   }
   const persisted = await findUserById(user.id);
   if (!persisted) {
-    redirect('/auth/login');
+    redirect('/app/auth/login');
   }
   return persisted;
 }

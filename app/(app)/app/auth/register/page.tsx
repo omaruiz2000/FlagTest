@@ -26,7 +26,8 @@ export default function RegisterPage({ searchParams }: RegisterPageProps) {
     setError(null);
     try {
       await register({ email, password });
-      router.push(returnTo || '/app');
+      router.replace(returnTo || '/app');
+      router.refresh();
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message || 'Unable to register');

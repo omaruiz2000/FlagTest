@@ -3,7 +3,14 @@ export default function AppHomePage() {
     <section>
       <h2>App Home</h2>
       <p>This area will host admin and results experiences for authenticated adults.</p>
-      <p>Future iterations will add navigation to evaluations, organizations, and results dashboards.</p>
+      <ul>
+        <li>
+          <a href="/app/evaluations">Go to evaluations</a>
+        </li>
+        <li>
+          <a href="/app/evaluations/new">Create a new evaluation</a>
+        </li>
+      </ul>
     </section>
   );
 }
