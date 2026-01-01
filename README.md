@@ -35,7 +35,7 @@ Foundation scaffold for FlagTest, a Next.js + Postgres product for running gamif
    ```
    - Marketing surface: `/`
    - App surface (auth required): `/app`
-   - Runner surface (fullscreen): `/runner`
+  - Runner surface (fullscreen): `/t`
 
 Seeded admin credentials: `admin@example.com` / `changeme123`.
 
