@@ -39,6 +39,7 @@ export function EvaluationBuilderForm({ packages, action }: Props) {
   const [createInvites, setCreateInvites] = useState(false);
   const [inviteCount, setInviteCount] = useState(3);
   const [inviteLabels, setInviteLabels] = useState('');
+  const [participantFeedbackMode, setParticipantFeedbackMode] = useState<'THANK_YOU_ONLY' | 'CAMOUFLAGE'>('THANK_YOU_ONLY');
 
   const handlePackageChange = (packageId: string) => {
     setSelectedPackageId(packageId);
@@ -120,6 +121,18 @@ export function EvaluationBuilderForm({ packages, action }: Props) {
           })}
         </div>
       </div>
+
+      <label className={styles.field}>
+        <span>Participant feedback</span>
+        <select
+          name="participantFeedbackMode"
+          value={participantFeedbackMode}
+          onChange={(event) => setParticipantFeedbackMode(event.target.value as 'THANK_YOU_ONLY' | 'CAMOUFLAGE')}
+        >
+          <option value="THANK_YOU_ONLY">THANK_YOU_ONLY (recommended for friends/couples/family)</option>
+          <option value="CAMOUFLAGE">CAMOUFLAGE (recommended for kids/school)</option>
+        </select>
+      </label>
 
       <div className={styles.invites}>
         <label className={styles.fieldCheckbox}>

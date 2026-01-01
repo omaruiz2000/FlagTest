@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { widgetRegistry } from '@/src/survey/registry.client';
 import type { TestDefinition } from '@/src/survey/schema';
 import { saveAnswer } from '@/src/services/sessions';
@@ -20,6 +21,7 @@ export function Runner({ sessionId, testDefinition, initialAnswers, initialScore
   const [status, setStatus] = useState(initialStatus);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const router = useRouter();
 
   const currentIndex = useMemo(() => {
     const next = testDefinition.items.findIndex((item) => !answers[item.id]);
@@ -28,6 +30,12 @@ export function Runner({ sessionId, testDefinition, initialAnswers, initialScore
 
   const style = resolveStyle(testDefinition.styleId);
   const completed = currentIndex >= testDefinition.items.length || status === 'COMPLETED';
+
+  useEffect(() => {
+    if (completed) {
+      router.replace(`/t/${sessionId}/complete`);
+    }
+  }, [completed, router, sessionId]);
 
   const handleSubmit = async (questionId: string, widgetType: string, value: unknown) => {
     if (submitting || completed) return;
@@ -53,17 +61,8 @@ export function Runner({ sessionId, testDefinition, initialAnswers, initialScore
     return (
       <div className={style.className}>
         <div style={{ maxWidth: 640, margin: '0 auto', paddingTop: 48 }}>
-          <h1>All done!</h1>
-          <p style={{ marginBottom: 24 }}>Thanks for completing the test. Here are your dimension scores:</p>
-          <div style={{ display: 'grid', gap: 12 }}>
-            {scores.map((score) => (
-              <div key={score.dimension} style={{ padding: 12, border: '1px solid #e5e7eb', borderRadius: 10 }}>
-                <strong>{score.dimension}</strong>
-                <div style={{ fontSize: 18 }}>{score.value}</div>
-              </div>
-            ))}
-            {scores.length === 0 ? <p>No scores recorded yet.</p> : null}
-          </div>
+          <h1>Guardando tus respuestas…</h1>
+          <p>Redirigiendo a la pantalla de cierre.</p>
         </div>
       </div>
     );

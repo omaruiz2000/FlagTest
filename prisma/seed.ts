@@ -1,4 +1,4 @@
-import { PrismaClient, OrgRole, EvaluationStatus } from '@prisma/client';
+import { PrismaClient, OrgRole, EvaluationStatus, ParticipantFeedbackMode } from '@prisma/client';
 import argon2 from 'argon2';
 
 const prisma = new PrismaClient();
@@ -111,6 +111,7 @@ async function main() {
     where: { id: 'demo-evaluation' },
     update: {
       organizationId: organization.id,
+      participantFeedbackMode: ParticipantFeedbackMode.CAMOUFLAGE,
     },
     create: {
       id: 'demo-evaluation',
@@ -118,6 +119,7 @@ async function main() {
       description: 'Example evaluation seeded for development.',
       status: EvaluationStatus.DRAFT,
       organizationId: organization.id,
+      participantFeedbackMode: ParticipantFeedbackMode.CAMOUFLAGE,
     },
   });
 

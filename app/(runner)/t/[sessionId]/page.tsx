@@ -23,6 +23,10 @@ export default async function RunnerSessionPage({ params }: { params: { sessionI
     redirect('/join');
   }
 
+  if (session.status === 'COMPLETED') {
+    redirect(`/t/${session.id}/complete`);
+  }
+
   const testDefinition = validateTestDefinition(session.testDefinition.definition);
   const initialAnswers = Object.fromEntries(session.answers.map((answer) => [answer.questionId, answer.payload]));
   const initialScores = session.scores.map((score) => ({ dimension: score.dimension, value: score.value }));

@@ -13,6 +13,7 @@ const createEvaluationSchema = z.object({
   createInvites: z.boolean().optional(),
   inviteCount: z.number().int().min(1).max(500).optional(),
   inviteLabels: z.array(z.string()).optional(),
+  participantFeedbackMode: z.enum(['THANK_YOU_ONLY', 'CAMOUFLAGE']).default('THANK_YOU_ONLY'),
 }).superRefine((data, ctx) => {
   if (data.createInvites && !data.inviteCount) {
     ctx.addIssue({ code: 'custom', message: 'Invite count is required' });
@@ -45,6 +46,7 @@ async function createEvaluationAction(formData: FormData) {
   const tests = formData.getAll('tests');
   const createInvites = formData.get('createInvites') === 'on';
   const inviteCount = Number(formData.get('inviteCount') ?? 0);
+  const participantFeedbackMode = formData.get('participantFeedbackMode');
   const inviteLabelsRaw = formData.get('inviteLabels');
   const inviteLabels = typeof inviteLabelsRaw === 'string'
     ? inviteLabelsRaw
@@ -60,6 +62,10 @@ async function createEvaluationAction(formData: FormData) {
     createInvites,
     inviteCount: createInvites && !Number.isNaN(inviteCount) ? inviteCount : undefined,
     inviteLabels: createInvites ? inviteLabels : [],
+    participantFeedbackMode:
+      participantFeedbackMode === 'CAMOUFLAGE' || participantFeedbackMode === 'THANK_YOU_ONLY'
+        ? participantFeedbackMode
+        : 'THANK_YOU_ONLY',
   });
 
   if (!parsed.success) {
@@ -68,6 +74,7 @@ async function createEvaluationAction(formData: FormData) {
   }
 
   const { name: evalName, packageId: evalPackageId, tests: selectedTests } = parsed.data;
+  const { participantFeedbackMode: feedbackMode } = parsed.data;
   const packageItems = await prisma.testPackageItem.findMany({
     where: { testPackageId: evalPackageId, testDefinitionId: { in: selectedTests } },
     orderBy: { sortOrder: 'asc' },
@@ -83,6 +90,7 @@ async function createEvaluationAction(formData: FormData) {
       name: evalName,
       organizationId: null,
       ownerUserId: user.id,
+      participantFeedbackMode: feedbackMode,
     },
   });
 
