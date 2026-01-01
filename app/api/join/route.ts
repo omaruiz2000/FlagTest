@@ -1,6 +1,8 @@
-import type { StudentRecord, TestDefinition } from '@prisma/client';
+import crypto from 'crypto';
+import type { StudentRecord, TestDefinition, TestSession } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { cookies } from 'next/headers';
 import { prisma } from '@/src/db/prisma';
 import { generateParticipantToken, hashParticipantToken, setParticipantCookie } from '@/src/auth/participant';
 
@@ -32,21 +34,62 @@ export async function POST(request: Request) {
 
   let studentRecord: StudentRecord | null = null;
   let testDefinition: TestDefinition | null = null;
+  let session: TestSession | null = null;
 
   if (evaluationId && testDefinitionId) {
+    const evaluation = await prisma.evaluation.findUnique({ where: { id: evaluationId } });
+    if (!evaluation) {
+      return NextResponse.json({ error: 'Evaluation not found' }, { status: 404 });
+    }
+
     const evaluationTest = await prisma.evaluationTest.findFirst({
       where: { evaluationId, testDefinitionId },
       include: { testDefinition: true },
     });
 
     if (!evaluationTest) {
-      return NextResponse.json({ error: 'Invalid evaluation link' }, { status: 404 });
+      return NextResponse.json({ error: 'Test not available for this evaluation' }, { status: 404 });
     }
 
     testDefinition = evaluationTest.testDefinition;
-    if (code) {
-      studentRecord = await prisma.studentRecord.findUnique({ where: { code } });
+    const participantCookieName = `ft_pid_${evaluationId}`;
+    let participantId = cookies().get(participantCookieName)?.value;
+    if (!participantId) {
+      participantId = crypto.randomUUID();
+      cookies().set(participantCookieName, participantId, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+      });
     }
+
+    const attemptKey = `open:${evaluationId}:${participantId}:${testDefinitionId}`;
+    const existingSession = await prisma.testSession.findUnique({ where: { attemptKey } });
+
+    if (existingSession?.status === 'COMPLETED') {
+      return NextResponse.json({ error: 'Already completed' }, { status: 409 });
+    }
+
+    const token = generateParticipantToken();
+    const tokenHash = hashParticipantToken(token);
+
+    session = existingSession
+      ? await prisma.testSession.update({
+          where: { id: existingSession.id },
+          data: { participantTokenHash: tokenHash, lastSeenAt: new Date() },
+        })
+      : await prisma.testSession.create({
+          data: {
+            attemptKey,
+            participantTokenHash: tokenHash,
+            testDefinitionId: testDefinition.id,
+            evaluationId,
+            status: 'CREATED',
+          },
+        });
+
+    setParticipantCookie(session.id, token);
   } else {
     if (!code) {
       return NextResponse.json({ error: 'Code is required' }, { status: 400 });
@@ -73,6 +116,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'No test available' }, { status: 500 });
   }
 
+  if (session) {
+    return NextResponse.json({ sessionId: session.id, status: session.status });
+  }
+
   const attemptKey = `participant:${studentRecord?.id ?? (code ? `code:${code}` : 'demo')}:test:${testDefinition.id}:eval:${evaluationId ?? 'none'}`;
   const existingSession = await prisma.testSession.findUnique({ where: { attemptKey } });
 
@@ -83,7 +130,7 @@ export async function POST(request: Request) {
   const token = generateParticipantToken();
   const tokenHash = hashParticipantToken(token);
 
-  const session = existingSession
+  session = existingSession
     ? await prisma.testSession.update({
         where: { id: existingSession.id },
         data: { participantTokenHash: tokenHash, lastSeenAt: new Date() },
