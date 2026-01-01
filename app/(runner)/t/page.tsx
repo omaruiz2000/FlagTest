@@ -1,5 +1,5 @@
-import { ScenarioChoiceWidget } from '@/src/survey/widgets/scenario-choice';
-import { resolveStyle } from '@/src/survey/registry';
+import { ScenarioChoiceWidget } from '@/src/survey/widgets/scenario-choice.client';
+import { resolveStyle } from '@/src/survey/styles/registry';
 import { ScenarioChoiceItem } from '@/src/survey/schema';
 
 const exampleItem: ScenarioChoiceItem = {

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/src/db/prisma';
 import { readParticipantCookie, verifyParticipantTokenHash } from '@/src/auth/participant';
-import { validateTestDefinition, widgetRegistry } from '@/src/survey/registry';
+import { validateTestDefinition, widgetRegistry } from '@/src/survey/registry.server';
 
 const answerSchema = z.object({
   questionId: z.string(),

@@ -1,9 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { resolveStyle, widgetRegistry } from '@/src/survey/registry';
+import { widgetRegistry } from '@/src/survey/registry.client';
 import type { TestDefinition } from '@/src/survey/schema';
 import { saveAnswer } from '@/src/services/sessions';
+import { resolveStyle } from '@/src/survey/styles/registry';
 
 type RunnerProps = {
   sessionId: string;

@@ -1,23 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { z } from 'zod';
 import type { ScenarioChoiceItem, ScenarioChoiceOption } from '../schema';
+import type { ScenarioChoiceAnswer } from './scenario-choice.logic';
 import styles from './scenario-choice.module.css';
-
-type ScenarioChoiceAnswer = {
-  optionId: string;
-};
-
-export const scenarioChoiceAnswerSchema = z.object({
-  optionId: z.string(),
-});
-
-export function scenarioChoiceScoringStub(value: unknown, definition?: ScenarioChoiceItem) {
-  const parsed = scenarioChoiceAnswerSchema.safeParse(value);
-  if (!parsed.success || !definition?.scoring) return [];
-  return definition.scoring;
-}
 
 function OptionButton({ option, selected, onSelect }: { option: ScenarioChoiceOption; selected: boolean; onSelect: () => void }) {
   return (
