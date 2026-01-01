@@ -8,8 +8,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div className={styles.brand}>FlagTest</div>
         <nav className={styles.nav}>
           <Link href="/app">Home</Link>
-          <Link href="/auth/login">Login</Link>
-          <Link href="/auth/register">Register</Link>
+          <Link href="/app/auth/login">Login</Link>
+          <Link href="/app/auth/register">Register</Link>
         </nav>
       </header>
       <main className={styles.main}>{children}</main>
