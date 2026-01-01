@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/src/db/prisma';
 import { requireUser } from '@/src/auth/session';
+import { generateUniqueInviteCode } from '@/src/db/inviteCodes';
 import styles from '../styles.module.css';
 import { EvaluationBuilderForm } from './ui';
 
@@ -9,6 +10,13 @@ const createEvaluationSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   packageId: z.string().cuid(),
   tests: z.array(z.string().cuid()).min(1, 'Select at least one test'),
+  createInvites: z.boolean().optional(),
+  inviteCount: z.number().int().min(1).max(500).optional(),
+  inviteLabels: z.array(z.string()).optional(),
+}).superRefine((data, ctx) => {
+  if (data.createInvites && !data.inviteCount) {
+    ctx.addIssue({ code: 'custom', message: 'Invite count is required' });
+  }
 });
 
 async function loadPackages() {
@@ -35,10 +43,23 @@ async function createEvaluationAction(formData: FormData) {
   const name = formData.get('name');
   const packageId = formData.get('packageId');
   const tests = formData.getAll('tests');
+  const createInvites = formData.get('createInvites') === 'on';
+  const inviteCount = Number(formData.get('inviteCount') ?? 0);
+  const inviteLabelsRaw = formData.get('inviteLabels');
+  const inviteLabels = typeof inviteLabelsRaw === 'string'
+    ? inviteLabelsRaw
+        .toString()
+        .split('\n')
+        .map((label) => label.trim())
+        .filter(Boolean)
+    : [];
   const parsed = createEvaluationSchema.safeParse({
     name: typeof name === 'string' ? name.trim() : '',
     packageId: typeof packageId === 'string' ? packageId : '',
     tests: tests.filter((value): value is string => typeof value === 'string'),
+    createInvites,
+    inviteCount: createInvites && !Number.isNaN(inviteCount) ? inviteCount : undefined,
+    inviteLabels: createInvites ? inviteLabels : [],
   });
 
   if (!parsed.success) {
@@ -72,6 +93,23 @@ async function createEvaluationAction(formData: FormData) {
       sortOrder: index,
     })),
   });
+
+  if (parsed.data.createInvites && parsed.data.inviteCount) {
+    const invites = [] as { evaluationId: string; code: string; label?: string | null }[];
+    const labels = parsed.data.inviteLabels ?? [];
+    for (let i = 0; i < parsed.data.inviteCount; i += 1) {
+      const code = await generateUniqueInviteCode();
+      invites.push({
+        evaluationId: evaluation.id,
+        code,
+        label: labels[i] ?? null,
+      });
+    }
+
+    if (invites.length) {
+      await prisma.evaluationInvite.createMany({ data: invites });
+    }
+  }
 
   redirect(`/app/evaluations/${evaluation.id}`);
 }

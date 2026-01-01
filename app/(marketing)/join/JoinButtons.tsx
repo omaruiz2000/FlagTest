@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ApiError } from '@/src/services/http';
-import { joinEvaluationTest } from '@/src/services/join';
+import { joinEvaluationTest, joinInviteTest } from '@/src/services/join';
 
 type TestInfo = {
   id: string;
@@ -11,28 +11,36 @@ type TestInfo = {
 };
 
 type Props = {
-  evaluationId: string;
+  evaluationId?: string;
+  inviteCode?: string;
   tests: TestInfo[];
   selectedTestId?: string;
   statusMap?: Record<string, string>;
 };
 
-export function JoinButtons({ evaluationId, tests, selectedTestId, statusMap = {} }: Props) {
+export function JoinButtons({ evaluationId, inviteCode, tests, selectedTestId, statusMap = {} }: Props) {
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [statuses, setStatuses] = useState<Record<string, string>>(statusMap);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleJoin = async (testId: string) => {
+    if (!evaluationId && !inviteCode) return;
     setLoadingId(testId);
     setErrors((prev) => ({ ...prev, [testId]: '' }));
     try {
-      const result = await joinEvaluationTest(evaluationId, testId);
+      const result = inviteCode
+        ? await joinInviteTest(inviteCode, testId)
+        : await joinEvaluationTest(evaluationId as string, testId);
       setStatuses((prev) => ({ ...prev, [testId]: result.status ?? 'ACTIVE' }));
       router.push(`/t/${result.sessionId}`);
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
-        setStatuses((prev) => ({ ...prev, [testId]: 'COMPLETED' }));
+        if (error.message.toLowerCase().includes('completed')) {
+          setStatuses((prev) => ({ ...prev, [testId]: 'COMPLETED' }));
+        } else {
+          setErrors((prev) => ({ ...prev, [testId]: error.message }));
+        }
         return;
       }
       const message = error instanceof Error ? error.message : 'Unable to start';

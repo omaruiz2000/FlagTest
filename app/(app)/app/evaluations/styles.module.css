@@ -31,16 +31,41 @@
 }
 
 .field input,
-.field select {
+.field select,
+.field textarea {
   padding: 10px 12px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   font-size: 14px;
 }
 
+.field textarea {
+  resize: vertical;
+}
+
 .tests {
   border-top: 1px solid #e2e8f0;
   padding-top: 12px;
+}
+
+.invites {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.inviteFields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.fieldCheckbox {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
 }
 
 .testsHeader {
@@ -107,6 +132,70 @@
   background: #fff7ed;
   border: 1px solid #fed7aa;
   border-radius: 8px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.inviteActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.secondaryButton {
+  padding: 10px 14px;
+  background: #0f172a;
+  color: white;
+  border: 1px solid #0f172a;
+  border-radius: 10px;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.secondaryButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.inviteTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+.inviteTable th,
+.inviteTable td {
+  padding: 10px 8px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.inviteTable th {
+  font-size: 13px;
+  color: #475569;
+  font-weight: 600;
+}
+
+.monoLink {
+  color: #1d4ed8;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  word-break: break-all;
+}
+
+.pill {
+  display: inline-block;
+  padding: 4px 10px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  font-size: 13px;
 }
 
 .list {

@@ -1,6 +1,11 @@
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { getEvaluationWithTests, findEvaluationTestStatuses } from '@/src/db/repositories/evaluations';
+import {
+  getEvaluationWithTests,
+  findEvaluationTestStatuses,
+  findInviteByCodeWithEvaluation,
+  findInviteTestStatuses,
+} from '@/src/db/repositories/evaluations';
 import { CodeJoinForm } from './CodeJoinForm';
 import { JoinButtons } from './JoinButtons';
 
@@ -14,8 +19,58 @@ function getParamValue(value?: string | string[] | null) {
 }
 
 export default async function JoinPage({ searchParams }: JoinPageProps) {
+  const inviteCode = getParamValue(searchParams?.inv);
   const evaluationId = getParamValue(searchParams?.e);
   const selectedTestId = getParamValue(searchParams?.t);
+
+  if (inviteCode) {
+    const invite = await findInviteByCodeWithEvaluation(inviteCode);
+    if (!invite || !invite.evaluation) {
+      return notFound();
+    }
+
+    const tests = invite.evaluation.tests.map((evaluationTest) => ({
+      id: evaluationTest.testDefinition.id,
+      title: evaluationTest.testDefinition.title,
+    }));
+
+    const statusMap = await findInviteTestStatuses(
+      invite.id,
+      invite.evaluation.tests.map((test) => test.testDefinition.id),
+    );
+
+    const visibleTests = selectedTestId
+      ? tests.filter((test) => test.id === selectedTestId)
+      : tests;
+
+    const selectedTest = selectedTestId
+      ? tests.find((test) => test.id === selectedTestId)
+      : undefined;
+
+    return (
+      <main style={{ padding: '72px 24px', maxWidth: 720, margin: '0 auto' }}>
+        <h1 style={{ marginBottom: 12 }}>
+          Join your evaluation: {invite.evaluation.name}
+        </h1>
+        {invite.label ? (
+          <p style={{ margin: '0 0 6px', color: '#475569' }}>Invite: {invite.label}</p>
+        ) : null}
+        <p style={{ marginBottom: 24, color: '#475569' }}>
+          Select a test below to start your evaluation.
+        </p>
+        {selectedTest ? (
+          <p style={{ marginBottom: 16, color: '#475569' }}>Selected test: {selectedTest.title}</p>
+        ) : null}
+        <JoinButtons
+          inviteCode={invite.code}
+          evaluationId={invite.evaluation.id}
+          tests={visibleTests.length ? visibleTests : tests}
+          selectedTestId={selectedTestId}
+          statusMap={statusMap}
+        />
+      </main>
+    );
+  }
 
   if (!evaluationId) {
     return <CodeJoinForm />;

@@ -138,6 +138,22 @@ async function main() {
     },
   });
 
+  const demoInvites = [
+    { code: 'INVDEMO1', label: 'Pedro' },
+    { code: 'INVDEMO2', label: 'Alexia' },
+    { code: 'INVDEMO3', label: 'Jordan' },
+  ];
+
+  await Promise.all(
+    demoInvites.map((invite) =>
+      prisma.evaluationInvite.upsert({
+        where: { code: invite.code },
+        update: { label: invite.label, evaluationId: 'demo-evaluation' },
+        create: { evaluationId: 'demo-evaluation', code: invite.code, label: invite.label },
+      }),
+    ),
+  );
+
   const friendsPackage = await prisma.testPackage.upsert({
     where: { slug: 'friends' },
     update: {},
