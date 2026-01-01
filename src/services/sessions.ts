@@ -4,8 +4,13 @@ export type JoinResponse = {
   sessionId: string;
 };
 
-export async function joinWithCode(code: string): Promise<JoinResponse> {
-  return apiFetch<JoinResponse>('/api/join', {
+export async function joinWithCode(code: string, evaluationId?: string, testDefinitionId?: string): Promise<JoinResponse> {
+  const params = new URLSearchParams();
+  if (evaluationId) params.set('e', evaluationId);
+  if (testDefinitionId) params.set('t', testDefinitionId);
+  const path = params.size ? `/api/join?${params.toString()}` : '/api/join';
+
+  return apiFetch<JoinResponse>(path, {
     method: 'POST',
     body: { code },
   });

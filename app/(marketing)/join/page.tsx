@@ -1,21 +1,36 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { FormEvent, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { joinWithCode } from '@/src/services/sessions';
 
 export default function JoinPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const evaluationId = searchParams.get('e') ?? undefined;
+  const testDefinitionId = searchParams.get('t') ?? undefined;
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const heading = useMemo(() => {
+    if (evaluationId && testDefinitionId) {
+      return 'Join your evaluation';
+    }
+    return 'Join your FlagTest session';
+  }, [evaluationId, testDefinitionId]);
+  const description = useMemo(() => {
+    if (evaluationId && testDefinitionId) {
+      return 'Enter the code shared with you to start this evaluation.';
+    }
+    return 'Enter the code your teacher shared to start the short test.';
+  }, [evaluationId, testDefinitionId]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
     setError(null);
     try {
-      const result = await joinWithCode(code.trim());
+      const result = await joinWithCode(code.trim(), evaluationId, testDefinitionId);
       router.push(`/t/${result.sessionId}`);
     } catch (err) {
       setError((err as Error).message || 'Unable to join session');
@@ -26,8 +41,13 @@ export default function JoinPage() {
 
   return (
     <main style={{ padding: '72px 24px', maxWidth: 720, margin: '0 auto' }}>
-      <h1 style={{ marginBottom: 16 }}>Join your FlagTest session</h1>
-      <p style={{ marginBottom: 24 }}>Enter the code your teacher shared to start the short test.</p>
+      <h1 style={{ marginBottom: 16 }}>{heading}</h1>
+      <p style={{ marginBottom: 24 }}>{description}</p>
+      {evaluationId && testDefinitionId ? (
+        <p style={{ marginBottom: 16, color: '#475569' }}>
+          Joining evaluation {evaluationId} for test {testDefinitionId}
+        </p>
+      ) : null}
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 320 }}>
         <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <span>Join code</span>

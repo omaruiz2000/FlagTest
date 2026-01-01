@@ -1,37 +1,79 @@
+import type { StudentRecord, TestDefinition } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/src/db/prisma';
 import { generateParticipantToken, hashParticipantToken, setParticipantCookie } from '@/src/auth/participant';
 
 const joinSchema = z.object({
-  code: z.string().min(1),
+  code: z.string().min(1).optional(),
+  evaluationId: z.string().cuid().optional(),
+  testDefinitionId: z.string().cuid().optional(),
 });
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
-  const parsed = joinSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid code' }, { status: 400 });
-  }
-
-  const code = parsed.data.code.trim();
-  const studentCount = await prisma.studentRecord.count();
-  const studentRecord = await prisma.studentRecord.findUnique({ where: { code } });
-
-  if (!studentRecord && !(studentCount === 0 && code.toUpperCase() === 'DEMO')) {
-    return NextResponse.json({ error: 'Code not recognized' }, { status: 404 });
-  }
-
-  const testDefinition = await prisma.testDefinition.findFirst({
-    where: { slug: 'scenario-demo' },
-    orderBy: { version: 'desc' },
+  const url = new URL(request.url);
+  const parsed = joinSchema.safeParse({
+    ...body,
+    evaluationId: body.evaluationId ?? url.searchParams.get('e') ?? undefined,
+    testDefinitionId: body.testDefinitionId ?? url.searchParams.get('t') ?? undefined,
   });
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid join request' }, { status: 400 });
+  }
+
+  const code = parsed.data.code?.trim() ?? '';
+  const evaluationId = parsed.data.evaluationId ?? undefined;
+  const testDefinitionId = parsed.data.testDefinitionId ?? undefined;
+
+  if ((evaluationId && !testDefinitionId) || (!evaluationId && testDefinitionId)) {
+    return NextResponse.json({ error: 'Evaluation and test must be provided together' }, { status: 400 });
+  }
+
+  let studentRecord: StudentRecord | null = null;
+  let testDefinition: TestDefinition | null = null;
+
+  if (evaluationId && testDefinitionId) {
+    const evaluationTest = await prisma.evaluationTest.findFirst({
+      where: { evaluationId, testDefinitionId },
+      include: { testDefinition: true },
+    });
+
+    if (!evaluationTest) {
+      return NextResponse.json({ error: 'Invalid evaluation link' }, { status: 404 });
+    }
+
+    testDefinition = evaluationTest.testDefinition;
+    if (code) {
+      studentRecord = await prisma.studentRecord.findUnique({ where: { code } });
+    }
+  } else {
+    if (!code) {
+      return NextResponse.json({ error: 'Code is required' }, { status: 400 });
+    }
+
+    const studentCount = await prisma.studentRecord.count();
+    studentRecord = await prisma.studentRecord.findUnique({ where: { code } });
+
+    if (!studentRecord && !(studentCount === 0 && code.toUpperCase() === 'DEMO')) {
+      return NextResponse.json({ error: 'Code not recognized' }, { status: 404 });
+    }
+
+    testDefinition = await prisma.testDefinition.findFirst({
+      where: { slug: 'scenario-demo' },
+      orderBy: { version: 'desc' },
+    });
+
+    if (!testDefinition) {
+      return NextResponse.json({ error: 'No demo test available' }, { status: 500 });
+    }
+  }
 
   if (!testDefinition) {
-    return NextResponse.json({ error: 'No demo test available' }, { status: 500 });
+    return NextResponse.json({ error: 'No test available' }, { status: 500 });
   }
 
-  const attemptKey = `student:${studentRecord?.id ?? 'demo'}:test:${testDefinition.id}:eval:${'none'}`;
+  const attemptKey = `participant:${studentRecord?.id ?? (code ? `code:${code}` : 'demo')}:test:${testDefinition.id}:eval:${evaluationId ?? 'none'}`;
   const existingSession = await prisma.testSession.findUnique({ where: { attemptKey } });
 
   if (existingSession?.status === 'COMPLETED') {
