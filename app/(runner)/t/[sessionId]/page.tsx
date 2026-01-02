@@ -12,7 +12,13 @@ export default async function RunnerSessionPage({ params }: { params: { sessionI
 
   const session = await prisma.testSession.findUnique({
     where: { id: params.sessionId },
-    include: { testDefinition: true, answers: true, scores: true },
+    include: {
+      testDefinition: true,
+      answers: true,
+      scores: true,
+      evaluation: { select: { id: true, isClosed: true } },
+      invite: { select: { token: true } },
+    },
   });
 
   if (!session) {
@@ -21,6 +27,13 @@ export default async function RunnerSessionPage({ params }: { params: { sessionI
 
   if (!verifyParticipantTokenHash(participant.token, session.participantTokenHash)) {
     redirect('/join');
+  }
+
+  if (session.evaluation?.isClosed) {
+    const target = session.evaluation?.id
+      ? `/join?e=${session.evaluation.id}${session.invite?.token ? `&inv=${session.invite.token}` : ''}`
+      : '/join';
+    redirect(target);
   }
 
   if (session.status === 'COMPLETED') {

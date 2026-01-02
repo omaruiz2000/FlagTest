@@ -45,6 +45,7 @@ model User {
   groupMemberships GroupMember[]  @relation("GroupMemberships")
   ownedEvaluations Evaluation[]   @relation("EvaluationOwner")
   deletedEvaluations Evaluation[] @relation("EvaluationDeletedBy")
+  closedEvaluations Evaluation[]  @relation("EvaluationClosedBy")
 }
 
 model AuthSession {
@@ -88,6 +89,10 @@ model Evaluation {
   name           String
   description    String?
   status         EvaluationStatus   @default(DRAFT)
+  isClosed       Boolean            @default(false)
+  closedAt       DateTime?
+  closedBy       User?              @relation("EvaluationClosedBy", fields: [closedByUserId], references: [id])
+  closedByUserId String?
   participantFeedbackMode ParticipantFeedbackMode @default(THANK_YOU_ONLY)
   organization   Organization?      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   organizationId String?
@@ -105,6 +110,7 @@ model Evaluation {
   @@index([deletedAt])
   @@index([ownerUserId])
   @@index([organizationId])
+  @@index([closedAt])
 }
 
 model Invite {

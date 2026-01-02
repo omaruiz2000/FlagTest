@@ -76,6 +76,7 @@ export default async function AdminEvaluationsPage({
                 <th>Status</th>
                 <th>Created</th>
                 <th>Deleted</th>
+                <th>Details</th>
                 <th></th>
               </tr>
             </thead>
@@ -88,9 +89,21 @@ export default async function AdminEvaluationsPage({
                   </td>
                   <td>{evaluation.ownerUser?.email || '—'}</td>
                   <td>{evaluation.organization?.name || '—'}</td>
-                  <td>{evaluation.status}</td>
+                  <td>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span className={styles.pill}>{evaluation.status}</span>
+                      <span className={evaluation.isClosed ? styles.badgeClosed : styles.badgeOpen}>
+                        {evaluation.isClosed ? 'CLOSED' : 'OPEN'}
+                      </span>
+                    </div>
+                  </td>
                   <td>{evaluation.createdAt.toLocaleString()}</td>
                   <td>{evaluation.deletedAt ? evaluation.deletedAt.toLocaleString() : '—'}</td>
+                  <td>
+                    <Link href={`/app/admin/evaluations/${evaluation.id}`} className={styles.secondaryButton}>
+                      View details
+                    </Link>
+                  </td>
                   <td>
                     <EvaluationActions evaluationId={evaluation.id} isDeleted={!!evaluation.deletedAt} />
                   </td>

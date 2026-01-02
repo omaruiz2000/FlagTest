@@ -5,7 +5,7 @@ import { hashInviteToken } from '@/src/auth/inviteTokens';
 export function findEvaluationById(id: string) {
   return prisma.evaluation.findUnique({
     where: { id },
-    select: { id: true, name: true },
+    select: { id: true, name: true, isClosed: true },
   });
 }
 
@@ -46,6 +46,7 @@ export function findInviteByTokenWithEvaluation(token: string) {
         select: {
           id: true,
           name: true,
+          isClosed: true,
           status: true,
           tests: {
             orderBy: { sortOrder: 'asc' },
@@ -106,4 +107,55 @@ export async function findInviteTestStatuses(inviteId: string, testDefinitionIds
     acc[testId] = { status: session.status, hasAnswers: session._count.answers > 0 || session.status === 'ACTIVE' };
     return acc;
   }, {});
+}
+
+export function loadEvaluationDetails(
+  evaluationId: string,
+  options: { ownerUserId?: string; includeDeleted?: boolean } = {},
+) {
+  const { ownerUserId, includeDeleted = false } = options;
+
+  return prisma.evaluation.findFirst({
+    where: {
+      id: evaluationId,
+      ...(includeDeleted ? {} : { deletedAt: null }),
+      ...(ownerUserId ? { ownerUserId } : {}),
+    },
+    include: {
+      tests: {
+        orderBy: { sortOrder: 'asc' },
+        include: {
+          testDefinition: {
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              camouflageOptions: {
+                where: { isActive: true },
+                orderBy: { sortOrder: 'asc' },
+                include: { camouflageSet: { select: { id: true, title: true, slug: true } } },
+              },
+            },
+          },
+          camouflageSet: { select: { id: true, title: true, slug: true } },
+        },
+      },
+      invites: {
+        orderBy: { createdAt: 'asc' },
+        include: {
+          sessions: { select: { status: true, testDefinitionId: true } },
+        },
+      },
+      sessions: {
+        where: { evaluationId },
+        include: {
+          invite: { select: { alias: true, id: true } },
+          testDefinition: { select: { id: true, title: true } },
+          scores: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      },
+      closedBy: { select: { id: true, email: true } },
+    },
+  });
 }

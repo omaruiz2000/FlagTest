@@ -283,6 +283,31 @@
 .listItem p {
   margin: 0 0 8px;
   color: #475569;
+  font-size: 14px;
+}
+
+.badgeOpen,
+.badgeClosed {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.badgeOpen {
+  color: #166534;
+  background: #ecfdf3;
+  border-color: #bbf7d0;
+}
+
+.badgeClosed {
+  color: #991b1b;
+  background: #fef2f2;
+  border-color: #fecdd3;
 }
 
 .linkList {

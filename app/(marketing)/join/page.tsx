@@ -38,6 +38,8 @@ export default async function JoinPage({ searchParams }: JoinPageProps) {
       title: evaluationTest.testDefinition.title,
     }));
 
+    const isClosed = invite.evaluation.isClosed;
+
     const statusMap = await findInviteTestStatuses(
       invite.id,
       invite.evaluation.tests.map((test) => test.testDefinition.id),
@@ -62,6 +64,11 @@ export default async function JoinPage({ searchParams }: JoinPageProps) {
         <p style={{ marginBottom: 24, color: '#475569' }}>
           Select a test below to start your evaluation.
         </p>
+        {isClosed ? (
+          <p style={{ marginTop: -12, marginBottom: 12, color: '#b91c1c', fontWeight: 600 }}>
+            Evaluation closed. You cannot start or continue tests.
+          </p>
+        ) : null}
         {selectedTest ? (
           <p style={{ marginBottom: 16, color: '#475569' }}>Selected test: {selectedTest.title}</p>
         ) : null}
@@ -71,6 +78,7 @@ export default async function JoinPage({ searchParams }: JoinPageProps) {
           tests={visibleTests.length ? visibleTests : tests}
           selectedTestId={selectedTestId}
           statusMap={statusMap}
+          isEvaluationClosed={isClosed}
         />
       </main>
     );
@@ -90,6 +98,7 @@ export default async function JoinPage({ searchParams }: JoinPageProps) {
     title: evaluationTest.testDefinition.title,
   }));
 
+  const isClosed = evaluation.isClosed;
   const participantId = cookies().get(`ft_pid_${evaluation.id}`)?.value;
   const statusMap = participantId
     ? await findEvaluationTestStatuses(
@@ -113,6 +122,11 @@ export default async function JoinPage({ searchParams }: JoinPageProps) {
       <p style={{ marginBottom: 24, color: '#475569' }}>
         Select a test below to start your evaluation.
       </p>
+      {isClosed ? (
+        <p style={{ marginTop: -12, marginBottom: 12, color: '#b91c1c', fontWeight: 600 }}>
+          Evaluation closed. You cannot start or continue tests.
+        </p>
+      ) : null}
       {selectedTest ? (
         <p style={{ marginBottom: 16, color: '#475569' }}>Selected test: {selectedTest.title}</p>
       ) : null}
@@ -121,6 +135,7 @@ export default async function JoinPage({ searchParams }: JoinPageProps) {
         tests={visibleTests.length ? visibleTests : tests}
         selectedTestId={selectedTestId}
         statusMap={statusMap}
+        isEvaluationClosed={isClosed}
       />
     </main>
   );

@@ -1,9 +1,8 @@
-import crypto from 'crypto';
 import type { StudentRecord, TestDefinition, TestSession } from '@prisma/client';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { cookies } from 'next/headers';
 import { prisma } from '@/src/db/prisma';
+import { JoinError, joinEvaluationSession } from '@/src/services/server/join';
 import { generateParticipantToken, hashParticipantToken, setParticipantCookie } from '@/src/auth/participant';
 
 const joinSchema = z.object({
@@ -37,59 +36,15 @@ export async function POST(request: Request) {
   let session: TestSession | null = null;
 
   if (evaluationId && testDefinitionId) {
-    const evaluation = await prisma.evaluation.findUnique({ where: { id: evaluationId } });
-    if (!evaluation) {
-      return NextResponse.json({ error: 'Evaluation not found' }, { status: 404 });
+    try {
+      const result = await joinEvaluationSession(evaluationId, testDefinitionId);
+      return NextResponse.json(result);
+    } catch (error) {
+      if (error instanceof JoinError) {
+        return NextResponse.json({ error: error.message }, { status: error.status });
+      }
+      return NextResponse.json({ error: 'Unable to join' }, { status: 500 });
     }
-
-    const evaluationTest = await prisma.evaluationTest.findFirst({
-      where: { evaluationId, testDefinitionId },
-      include: { testDefinition: true },
-    });
-
-    if (!evaluationTest) {
-      return NextResponse.json({ error: 'Test not available for this evaluation' }, { status: 404 });
-    }
-
-    testDefinition = evaluationTest.testDefinition;
-    const participantCookieName = `ft_pid_${evaluationId}`;
-    let participantId = cookies().get(participantCookieName)?.value;
-    if (!participantId) {
-      participantId = crypto.randomUUID();
-      cookies().set(participantCookieName, participantId, {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
-        path: '/',
-      });
-    }
-
-    const attemptKey = `open:${evaluationId}:${participantId}:${testDefinitionId}`;
-    const existingSession = await prisma.testSession.findUnique({ where: { attemptKey } });
-
-    if (existingSession?.status === 'COMPLETED') {
-      return NextResponse.json({ error: 'Already completed' }, { status: 409 });
-    }
-
-    const token = generateParticipantToken();
-    const tokenHash = hashParticipantToken(token);
-
-    session = existingSession
-      ? await prisma.testSession.update({
-          where: { id: existingSession.id },
-          data: { participantTokenHash: tokenHash, lastSeenAt: new Date() },
-        })
-      : await prisma.testSession.create({
-          data: {
-            attemptKey,
-            participantTokenHash: tokenHash,
-            testDefinitionId: testDefinition.id,
-            evaluationId,
-            status: 'CREATED',
-          },
-        });
-
-    setParticipantCookie(session.id, token);
   } else {
     if (!code) {
       return NextResponse.json({ error: 'Code is required' }, { status: 400 });

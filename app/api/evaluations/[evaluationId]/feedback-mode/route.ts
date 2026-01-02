@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/src/db/prisma';
 import { requireUser } from '@/src/auth/session';
+import { isPlatformAdmin } from '@/src/auth/admin';
 
 const schema = z.object({ mode: z.enum(['THANK_YOU_ONLY', 'CAMOUFLAGE']) });
 
@@ -15,7 +16,10 @@ export async function POST(request: Request, { params }: { params: { evaluationI
   }
 
   const evaluation = await prisma.evaluation.findFirst({
-    where: { id: params.evaluationId, ownerUserId: user.id },
+    where: {
+      id: params.evaluationId,
+      ...(isPlatformAdmin(user) ? {} : { ownerUserId: user.id }),
+    },
     select: { id: true },
   });
 

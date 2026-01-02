@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/src/db/prisma';
 import { requireUser } from '@/src/auth/session';
+import { isPlatformAdmin } from '@/src/auth/admin';
 
 export async function POST(req: Request, { params }: { params: { evaluationId: string; evaluationTestId: string } }) {
   const user = await requireUser();
@@ -10,7 +11,7 @@ export async function POST(req: Request, { params }: { params: { evaluationId: s
     where: {
       id: evaluationTestId,
       evaluationId,
-      evaluation: { ownerUserId: user.id },
+      ...(isPlatformAdmin(user) ? {} : { evaluation: { ownerUserId: user.id } }),
     },
     include: {
       evaluation: { select: { participantFeedbackMode: true } },

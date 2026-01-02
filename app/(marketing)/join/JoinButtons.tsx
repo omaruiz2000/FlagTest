@@ -18,9 +18,10 @@ type Props = {
   tests: TestInfo[];
   selectedTestId?: string;
   statusMap?: Record<string, StatusInfo>;
+  isEvaluationClosed?: boolean;
 };
 
-export function JoinButtons({ evaluationId, inviteToken, tests, selectedTestId, statusMap = {} }: Props) {
+export function JoinButtons({ evaluationId, inviteToken, tests, selectedTestId, statusMap = {}, isEvaluationClosed }: Props) {
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [statuses, setStatuses] = useState<Record<string, StatusInfo>>(statusMap);
@@ -28,6 +29,10 @@ export function JoinButtons({ evaluationId, inviteToken, tests, selectedTestId, 
 
   const handleJoin = async (testId: string) => {
     if (!evaluationId && !inviteToken) return;
+    if (isEvaluationClosed) {
+      setErrors((prev) => ({ ...prev, [testId]: 'Evaluation closed' }));
+      return;
+    }
     setLoadingId(testId);
     setErrors((prev) => ({ ...prev, [testId]: '' }));
     try {
@@ -62,6 +67,8 @@ export function JoinButtons({ evaluationId, inviteToken, tests, selectedTestId, 
         const isCompleted = status === 'COMPLETED';
         const isContinuable = status === 'ACTIVE' || (status !== undefined && hasAnswers);
         const label = isCompleted ? 'Completed' : isContinuable ? 'Continue' : 'Start';
+        const isDisabled = isEvaluationClosed || isCompleted || loadingId === test.id;
+        const closedMessage = isEvaluationClosed && !isCompleted ? 'Evaluation closed' : null;
         return (
           <div
             key={test.id}
@@ -81,22 +88,24 @@ export function JoinButtons({ evaluationId, inviteToken, tests, selectedTestId, 
               </div>
               <button
                 type="button"
-                disabled={loadingId === test.id || isCompleted}
+                disabled={isDisabled}
                 onClick={() => handleJoin(test.id)}
                 style={{
                   padding: '10px 14px',
                   borderRadius: 8,
                   border: '1px solid #111827',
-                  backgroundColor: isCompleted ? '#e5e7eb' : '#111827',
-                  color: isCompleted ? '#111827' : 'white',
-                  cursor: isCompleted ? 'not-allowed' : 'pointer',
+                  backgroundColor: isCompleted || isEvaluationClosed ? '#e5e7eb' : '#111827',
+                  color: isCompleted || isEvaluationClosed ? '#111827' : 'white',
+                  cursor: isDisabled ? 'not-allowed' : 'pointer',
                   minWidth: 120,
                 }}
               >
-                {isCompleted ? 'Completed' : loadingId === test.id ? 'Joining…' : label}
+                {isCompleted ? 'Completed' : loadingId === test.id ? 'Joining…' : isEvaluationClosed ? 'Closed' : label}
               </button>
             </div>
-            {errors[test.id] ? (
+            {closedMessage ? (
+              <div style={{ color: '#b91c1c', marginTop: 8, fontSize: 14 }}>{closedMessage}</div>
+            ) : errors[test.id] ? (
               <div style={{ color: 'crimson', marginTop: 8, fontSize: 14 }}>{errors[test.id]}</div>
             ) : null}
           </div>

@@ -5,6 +5,8 @@ import { readParticipantCookie, verifyParticipantTokenHash } from '@/src/auth/pa
 import { validateTestDefinition } from '@/src/survey/registry';
 import { resolveStyle } from '@/src/survey/styles/registry';
 import { computeSlotKeyForSession } from '@/src/survey/scoring/compute-slot';
+import { joinInviteSession, JoinError } from '@/src/services/server/join';
+import { findInviteTestStatuses } from '@/src/db/repositories/evaluations';
 
 type CompletionProps = { params: { sessionId: string } };
 
@@ -27,7 +29,18 @@ export default async function CompletionPage({ params }: CompletionProps) {
           camouflageSlots: { orderBy: { rank: 'asc' } },
         },
       },
-      evaluation: { select: { participantFeedbackMode: true, tests: true } },
+      evaluation: {
+        select: {
+          id: true,
+          isClosed: true,
+          participantFeedbackMode: true,
+          tests: {
+            orderBy: { sortOrder: 'asc' },
+            select: { testDefinitionId: true, sortOrder: true, camouflageSetId: true },
+          },
+        },
+      },
+      invite: { select: { id: true, token: true } },
       scores: true,
     },
   });
@@ -43,6 +56,51 @@ export default async function CompletionPage({ params }: CompletionProps) {
   const testDefinition = validateTestDefinition(session.testDefinition.definition);
   const style = resolveStyle(testDefinition.styleId);
   const feedbackMode: ParticipantFeedbackMode = session.evaluation?.participantFeedbackMode ?? 'THANK_YOU_ONLY';
+
+  const invite = session.invite;
+  const evaluation = session.evaluation;
+
+  let nextTestDefinitionId: string | null = null;
+  const nextMenuLink = evaluation?.id
+    ? `/join?e=${evaluation.id}${invite?.token ? `&inv=${invite.token}` : ''}`
+    : '/join';
+
+  if (invite && evaluation && !evaluation.isClosed) {
+    const orderedTests = evaluation.tests;
+    const statusMap = await findInviteTestStatuses(invite.id, orderedTests.map((test) => test.testDefinitionId));
+    const currentIndex = orderedTests.findIndex((test) => test.testDefinitionId === session.testDefinitionId);
+
+    for (let index = currentIndex + 1; index < orderedTests.length; index += 1) {
+      const nextTestId = orderedTests[index].testDefinitionId;
+      const statusInfo = statusMap[nextTestId];
+      if (statusInfo?.status !== 'COMPLETED') {
+        nextTestDefinitionId = nextTestId;
+        break;
+      }
+    }
+  }
+
+  async function goToMenu() {
+    'use server';
+    redirect(nextMenuLink);
+  }
+
+  async function startNextTest() {
+    'use server';
+    if (!evaluation || !invite || !nextTestDefinitionId) {
+      redirect(nextMenuLink);
+    }
+
+    try {
+      const result = await joinInviteSession(evaluation.id, invite.token, nextTestDefinitionId);
+      redirect(`/t/${result.sessionId}`);
+    } catch (error) {
+      if (error instanceof JoinError && error.status === 409) {
+        redirect(nextMenuLink);
+      }
+      throw error;
+    }
+  }
 
   const availableSets = session.testDefinition.camouflageOptions;
   const evaluationSetId = session.evaluation?.tests.find(
@@ -111,6 +169,41 @@ export default async function CompletionPage({ params }: CompletionProps) {
             <p>Tu participación nos ayuda mucho. Puedes cerrar esta ventana.</p>
           </div>
         )}
+
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
+          <form action={goToMenu}>
+            <button
+              type="submit"
+              style={{
+                padding: '10px 14px',
+                borderRadius: 10,
+                border: '1px solid #0f172a',
+                background: '#0f172a',
+                color: '#fff',
+                cursor: 'pointer',
+              }}
+            >
+              Go to test menu
+            </button>
+          </form>
+          {nextTestDefinitionId ? (
+            <form action={startNextTest}>
+              <button
+                type="submit"
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: 10,
+                  border: '1px solid #0f172a',
+                  background: '#fff',
+                  color: '#0f172a',
+                  cursor: 'pointer',
+                }}
+              >
+                Next test
+              </button>
+            </form>
+          ) : null}
+        </div>
       </div>
     </div>
   );

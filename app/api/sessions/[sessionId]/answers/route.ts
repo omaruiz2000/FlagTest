@@ -25,11 +25,15 @@ export async function POST(request: Request, { params }: { params: { sessionId: 
 
   const session = await prisma.testSession.findUnique({
     where: { id: params.sessionId },
-    include: { testDefinition: true },
+    include: { testDefinition: true, evaluation: { select: { isClosed: true } } },
   });
 
   if (!session) {
     return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+  }
+
+  if (session.evaluation?.isClosed) {
+    return NextResponse.json({ error: 'Evaluation is closed' }, { status: 409 });
   }
 
   if (!verifyParticipantTokenHash(participant.token, session.participantTokenHash)) {
