@@ -145,6 +145,9 @@ model TestDefinition {
   packageItems    TestPackageItem[]
   sessions        TestSession[]
   camouflageOptions TestCamouflageOption[]
+  camouflageSlots   TestCamouflageSlot[]
+  camouflageMappings TestCamouflageMapping[]
+  camouflageCopies   TestCamouflageCopy[]
 
   @@unique([slug, version])
 }
@@ -227,6 +230,8 @@ model CamouflageSet {
   characters CamouflageCharacter[]
   options   TestCamouflageOption[]
   evaluationTests EvaluationTest[]
+  mappings  TestCamouflageMapping[]
+  copies    TestCamouflageCopy[]
 }
 
 model CamouflageCharacter {
@@ -238,6 +243,7 @@ model CamouflageCharacter {
   imageUrl  String?
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
+  mappings  TestCamouflageMapping[]
 
   @@unique([setId, key])
 }
@@ -254,6 +260,47 @@ model TestCamouflageOption {
   @@unique([testDefinitionId, camouflageSetId])
   @@index([testDefinitionId])
   @@index([camouflageSetId])
+}
+
+model TestCamouflageSlot {
+  id               String          @id @default(cuid())
+  testDefinition   TestDefinition  @relation(fields: [testDefinitionId], references: [id], onDelete: Cascade)
+  testDefinitionId String
+  key              String
+  rank             Int
+  title            String?
+  createdAt        DateTime        @default(now())
+
+  @@unique([testDefinitionId, key])
+  @@index([testDefinitionId, rank])
+}
+
+model TestCamouflageMapping {
+  id               String             @id @default(cuid())
+  testDefinition   TestDefinition     @relation(fields: [testDefinitionId], references: [id], onDelete: Cascade)
+  testDefinitionId String
+  camouflageSet    CamouflageSet      @relation(fields: [camouflageSetId], references: [id], onDelete: Cascade)
+  camouflageSetId  String
+  slotKey          String
+  character        CamouflageCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  characterId      String
+
+  @@unique([testDefinitionId, camouflageSetId, slotKey])
+  @@index([testDefinitionId, camouflageSetId])
+}
+
+model TestCamouflageCopy {
+  id               String         @id @default(cuid())
+  testDefinition   TestDefinition @relation(fields: [testDefinitionId], references: [id], onDelete: Cascade)
+  testDefinitionId String
+  camouflageSet    CamouflageSet  @relation(fields: [camouflageSetId], references: [id], onDelete: Cascade)
+  camouflageSetId  String
+  slotKey          String
+  headline         String
+  description      String
+  tips             Json?
+
+  @@unique([testDefinitionId, camouflageSetId, slotKey])
 }
 
 model Answer {

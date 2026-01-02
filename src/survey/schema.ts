@@ -27,6 +27,14 @@ export const TestDefinitionV1Schema = z.object({
   slug: z.string(),
   title: z.string(),
   styleId: z.string().default('classic'),
+  dimensions: z
+    .array(
+      z.object({
+        id: z.string(),
+        title: z.string().optional(),
+      }),
+    )
+    .optional(),
   items: z.array(ScenarioChoiceItemSchema),
   metadata: z.record(z.unknown()).optional(),
 });
