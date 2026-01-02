@@ -15,8 +15,8 @@ enum OrgRole {
 
 enum EvaluationStatus {
   DRAFT
-  ACTIVE
-  ARCHIVED
+  OPEN
+  CLOSED
 }
 
 enum TestSessionStatus {

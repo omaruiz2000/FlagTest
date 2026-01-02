@@ -32,14 +32,18 @@ function ensureEvaluationParticipantId(evaluationId: string) {
 export async function joinEvaluationSession(evaluationId: string, testDefinitionId: string) {
   const evaluation = await prisma.evaluation.findFirst({
     where: { id: evaluationId, deletedAt: null },
-    select: { id: true, isClosed: true, tests: { select: { testDefinitionId: true } } },
+    select: { id: true, status: true, tests: { select: { testDefinitionId: true } } },
   });
 
   if (!evaluation) {
     throw new JoinError('Evaluation not found', 404);
   }
 
-  if (evaluation.isClosed) {
+  if (evaluation.status === 'DRAFT') {
+    throw new JoinError('Evaluation not found', 404);
+  }
+
+  if (evaluation.status === 'CLOSED') {
     throw new JoinError('Evaluation closed', 409);
   }
 
@@ -95,7 +99,11 @@ export async function joinInviteSession(evaluationId: string, inviteToken: strin
     throw new JoinError('Invite not found', 404);
   }
 
-  if (invite.evaluation.isClosed) {
+  if (invite.evaluation.status === 'DRAFT') {
+    throw new JoinError('Invite not found', 404);
+  }
+
+  if (invite.evaluation.status === 'CLOSED') {
     throw new JoinError('Evaluation closed', 409);
   }
 
@@ -106,10 +114,6 @@ export async function joinInviteSession(evaluationId: string, inviteToken: strin
 
   const attemptKey = `inv:${invite.id}:test:${testDefinitionId}`;
   const existingSession = await prisma.testSession.findUnique({ where: { attemptKey } });
-
-  if (!existingSession && invite.evaluation.status === 'ARCHIVED') {
-    throw new JoinError('Evaluation closed', 409);
-  }
 
   if (existingSession?.status === 'COMPLETED') {
     throw new JoinError('Test already completed', 409);

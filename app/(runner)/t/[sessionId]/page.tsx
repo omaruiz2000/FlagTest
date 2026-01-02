@@ -16,7 +16,7 @@ export default async function RunnerSessionPage({ params }: { params: { sessionI
       testDefinition: true,
       answers: true,
       scores: true,
-      evaluation: { select: { id: true, isClosed: true } },
+      evaluation: { select: { id: true, status: true } },
       invite: { select: { token: true } },
     },
   });
@@ -29,15 +29,19 @@ export default async function RunnerSessionPage({ params }: { params: { sessionI
     redirect('/join');
   }
 
-  if (session.evaluation?.isClosed) {
-    const target = session.evaluation?.id
-      ? `/join?e=${session.evaluation.id}${session.invite?.token ? `&inv=${session.invite.token}` : ''}`
-      : '/join';
-    redirect(target);
+  if (session.evaluation?.status === 'DRAFT') {
+    notFound();
   }
 
   if (session.status === 'COMPLETED') {
     redirect(`/t/${session.id}/complete`);
+  }
+
+  if (session.evaluation?.status === 'CLOSED') {
+    const target = session.evaluation?.id
+      ? `/join?e=${session.evaluation.id}${session.invite?.token ? `&inv=${session.invite.token}` : ''}`
+      : '/join';
+    redirect(target);
   }
 
   const testDefinition = validateTestDefinition(session.testDefinition.definition);

@@ -90,12 +90,7 @@ export default async function AdminEvaluationsPage({
                   <td>{evaluation.ownerUser?.email || '—'}</td>
                   <td>{evaluation.organization?.name || '—'}</td>
                   <td>
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <span className={styles.pill}>{evaluation.status}</span>
-                      <span className={evaluation.isClosed ? styles.badgeClosed : styles.badgeOpen}>
-                        {evaluation.isClosed ? 'CLOSED' : 'OPEN'}
-                      </span>
-                    </div>
+                    <span className={styles.pill}>{evaluation.status}</span>
                   </td>
                   <td>{evaluation.createdAt.toLocaleString()}</td>
                   <td>{evaluation.deletedAt ? evaluation.deletedAt.toLocaleString() : '—'}</td>

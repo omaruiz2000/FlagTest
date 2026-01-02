@@ -33,12 +33,16 @@ export default async function JoinPage({ searchParams }: JoinPageProps) {
       return notFound();
     }
 
+    if (invite.evaluation.status === 'DRAFT') {
+      return notFound();
+    }
+
     const tests = invite.evaluation.tests.map((evaluationTest) => ({
       id: evaluationTest.testDefinition.id,
       title: evaluationTest.testDefinition.title,
     }));
 
-    const isClosed = invite.evaluation.isClosed;
+    const isClosed = invite.evaluation.status === 'CLOSED';
 
     const statusMap = await findInviteTestStatuses(
       invite.id,
@@ -98,7 +102,7 @@ export default async function JoinPage({ searchParams }: JoinPageProps) {
     title: evaluationTest.testDefinition.title,
   }));
 
-  const isClosed = evaluation.isClosed;
+  const isClosed = evaluation.status === 'CLOSED';
   const participantId = cookies().get(`ft_pid_${evaluation.id}`)?.value;
   const statusMap = participantId
     ? await findEvaluationTestStatuses(

@@ -390,12 +390,13 @@ async function main() {
     update: {
       organizationId: organization.id,
       participantFeedbackMode: ParticipantFeedbackMode.CAMOUFLAGE,
+      status: EvaluationStatus.OPEN,
     },
     create: {
       id: 'demo-evaluation',
       name: 'Demo Evaluation',
       description: 'Example evaluation seeded for development.',
-      status: EvaluationStatus.DRAFT,
+      status: EvaluationStatus.OPEN,
       organizationId: organization.id,
       participantFeedbackMode: ParticipantFeedbackMode.CAMOUFLAGE,
     },

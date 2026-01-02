@@ -1,10 +1,10 @@
 import Link from 'next/link';
-import { CloseEvaluationButton } from './CloseEvaluationButton';
 import { ResetTestButton } from './ResetTestButton';
 import { CamouflageSetSelect } from '@/app/(app)/app/evaluations/CamouflageSetSelect';
 import styles from '@/app/(app)/app/evaluations/styles.module.css';
 import { FeedbackModeForm } from '@/app/(app)/app/evaluations/[evaluationId]/FeedbackModeForm';
 import { CopyInviteLinksButton } from '@/app/(app)/app/evaluations/[evaluationId]/InviteActions';
+import { EvaluationStatusControls } from './EvaluationStatusControls';
 import type { loadEvaluationDetails } from '@/src/db/repositories/evaluations';
 
 type DetailedEvaluation = NonNullable<Awaited<ReturnType<typeof loadEvaluationDetails>>>;
@@ -72,7 +72,9 @@ export function EvaluationDetails({ evaluation, viewer, showResetControls = fals
     testDefinitionId: session.testDefinitionId,
   }));
 
-  const closedHelper = evaluation.closedAt
+  const isClosed = evaluation.status === 'CLOSED';
+
+  const closedHelper = isClosed && evaluation.closedAt
     ? `Closed on ${evaluation.closedAt.toLocaleString()}${evaluation.closedBy?.email ? ` by ${evaluation.closedBy.email}` : ''}`
     : undefined;
 
@@ -82,16 +84,13 @@ export function EvaluationDetails({ evaluation, viewer, showResetControls = fals
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <h1 style={{ margin: 0 }}>{evaluation.name}</h1>
-            <span className={evaluation.isClosed ? styles.badgeClosed : styles.badgeOpen}>
-              {evaluation.isClosed ? 'CLOSED' : 'OPEN'}
-            </span>
-            <span className={styles.pill}>{evaluation.status}</span>
+            <span className={isClosed ? styles.badgeClosed : styles.badgeOpen}>{evaluation.status}</span>
           </div>
           <p>{evaluation.description || 'Evaluation details and join links.'}</p>
-          {evaluation.isClosed && closedHelper ? <p className={styles.helper}>{closedHelper}</p> : null}
+          {isClosed && closedHelper ? <p className={styles.helper}>{closedHelper}</p> : null}
         </div>
         <div className={styles.inviteActions}>
-          <CloseEvaluationButton evaluationId={evaluation.id} isClosed={evaluation.isClosed} />
+          <EvaluationStatusControls evaluationId={evaluation.id} status={evaluation.status} />
         </div>
       </div>
 

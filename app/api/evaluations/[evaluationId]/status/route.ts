@@ -5,7 +5,7 @@ import { prisma } from '@/src/db/prisma';
 import { requireUser } from '@/src/auth/session';
 import { isPlatformAdmin } from '@/src/auth/admin';
 
-const schema = z.object({ action: z.enum(['close', 'reopen']).default('close') });
+const schema = z.object({ status: z.enum(['DRAFT', 'OPEN', 'CLOSED']) });
 
 export async function POST(request: Request, { params }: { params: { evaluationId: string } }) {
   const user = await requireUser();
@@ -13,7 +13,7 @@ export async function POST(request: Request, { params }: { params: { evaluationI
   const parsed = schema.safeParse(body);
 
   if (!parsed.success) {
-    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
   }
 
   const evaluation = await prisma.evaluation.findFirst({
@@ -30,11 +30,13 @@ export async function POST(request: Request, { params }: { params: { evaluationI
   }
 
   const now = new Date();
-  const isClosing = parsed.data.action === 'close';
+  const nextStatus = parsed.data.status;
+  const isClosing = nextStatus === 'CLOSED';
 
   await prisma.evaluation.update({
     where: { id: evaluation.id },
     data: {
+      status: nextStatus,
       isClosed: isClosing,
       closedAt: isClosing ? now : null,
       closedByUserId: isClosing ? user.id : null,
@@ -46,5 +48,5 @@ export async function POST(request: Request, { params }: { params: { evaluationI
   revalidatePath('/app/admin/evaluations');
   revalidatePath('/join');
 
-  return NextResponse.json({ ok: true, isClosed: isClosing, closedAt: isClosing ? now : null });
+  return NextResponse.json({ ok: true, status: nextStatus, closedAt: isClosing ? now : null });
 }

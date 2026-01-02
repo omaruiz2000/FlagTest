@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import type { ParticipantFeedbackMode } from '@prisma/client';
 import { prisma } from '@/src/db/prisma';
 import { readParticipantCookie, verifyParticipantTokenHash } from '@/src/auth/participant';
@@ -32,7 +32,7 @@ export default async function CompletionPage({ params }: CompletionProps) {
       evaluation: {
         select: {
           id: true,
-          isClosed: true,
+          status: true,
           participantFeedbackMode: true,
           tests: {
             orderBy: { sortOrder: 'asc' },
@@ -47,6 +47,10 @@ export default async function CompletionPage({ params }: CompletionProps) {
 
   if (!session || !verifyParticipantTokenHash(participant.token, session.participantTokenHash)) {
     redirect('/join');
+  }
+
+  if (session.evaluation?.status === 'DRAFT') {
+    notFound();
   }
 
   if (session.status !== 'COMPLETED') {
@@ -65,7 +69,7 @@ export default async function CompletionPage({ params }: CompletionProps) {
     ? `/join?e=${evaluation.id}${invite?.token ? `&inv=${invite.token}` : ''}`
     : '/join';
 
-  if (invite && evaluation && !evaluation.isClosed) {
+  if (invite && evaluation && evaluation.status === 'OPEN') {
     const orderedTests = evaluation.tests;
     const statusMap = await findInviteTestStatuses(invite.id, orderedTests.map((test) => test.testDefinitionId));
     const currentIndex = orderedTests.findIndex((test) => test.testDefinitionId === session.testDefinitionId);

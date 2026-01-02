@@ -5,7 +5,7 @@ import { hashInviteToken } from '@/src/auth/inviteTokens';
 export function findEvaluationById(id: string) {
   return prisma.evaluation.findUnique({
     where: { id },
-    select: { id: true, name: true, isClosed: true },
+    select: { id: true, name: true, isClosed: true, status: true },
   });
 }
 
@@ -32,7 +32,7 @@ export async function getEvaluationWithTests(evaluationId: string) {
     findEvaluationTests(evaluationId),
   ]);
 
-  if (!evaluation) return null;
+  if (!evaluation || evaluation.status === 'DRAFT') return null;
 
   return { ...evaluation, tests };
 }
