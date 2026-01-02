@@ -19,19 +19,19 @@ export async function GET(_request: Request, { params }: { params: { evaluationI
     return NextResponse.json({ error: 'Evaluation not found' }, { status: 404 });
   }
 
-  const invites = await prisma.evaluationInvite.findMany({
+  const invites = await prisma.invite.findMany({
     where: { evaluationId: evaluation.id },
     orderBy: { createdAt: 'asc' },
   });
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const rows = invites.map((invite) => {
-    const label = invite.label ?? '';
-    const link = `${baseUrl}/join?inv=${invite.code}`;
-    return [label, link, invite.code].map(escapeCsv).join(',');
+    const alias = invite.alias ?? '';
+    const link = `${baseUrl}/join?e=${evaluation.id}&inv=${invite.token}`;
+    return [alias, link, invite.token].map(escapeCsv).join(',');
   });
 
-  const csv = ['label,link,inviteCode', ...rows].join('\n');
+  const csv = ['alias,link,inviteToken', ...rows].join('\n');
   return new NextResponse(csv, {
     status: 200,
     headers: {

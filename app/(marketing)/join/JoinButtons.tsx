@@ -10,34 +10,36 @@ type TestInfo = {
   title: string;
 };
 
+type StatusInfo = { status?: string; hasAnswers?: boolean };
+
 type Props = {
   evaluationId?: string;
-  inviteCode?: string;
+  inviteToken?: string;
   tests: TestInfo[];
   selectedTestId?: string;
-  statusMap?: Record<string, string>;
+  statusMap?: Record<string, StatusInfo>;
 };
 
-export function JoinButtons({ evaluationId, inviteCode, tests, selectedTestId, statusMap = {} }: Props) {
+export function JoinButtons({ evaluationId, inviteToken, tests, selectedTestId, statusMap = {} }: Props) {
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
-  const [statuses, setStatuses] = useState<Record<string, string>>(statusMap);
+  const [statuses, setStatuses] = useState<Record<string, StatusInfo>>(statusMap);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleJoin = async (testId: string) => {
-    if (!evaluationId && !inviteCode) return;
+    if (!evaluationId && !inviteToken) return;
     setLoadingId(testId);
     setErrors((prev) => ({ ...prev, [testId]: '' }));
     try {
-      const result = inviteCode
-        ? await joinInviteTest(inviteCode, testId)
+      const result = inviteToken
+        ? await joinInviteTest(evaluationId as string, inviteToken, testId)
         : await joinEvaluationTest(evaluationId as string, testId);
-      setStatuses((prev) => ({ ...prev, [testId]: result.status ?? 'ACTIVE' }));
+      setStatuses((prev) => ({ ...prev, [testId]: { status: result.status ?? 'ACTIVE', hasAnswers: false } }));
       router.push(`/t/${result.sessionId}`);
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
         if (error.message.toLowerCase().includes('completed')) {
-          setStatuses((prev) => ({ ...prev, [testId]: 'COMPLETED' }));
+          setStatuses((prev) => ({ ...prev, [testId]: { status: 'COMPLETED', hasAnswers: true } }));
         } else {
           setErrors((prev) => ({ ...prev, [testId]: error.message }));
         }
@@ -54,11 +56,12 @@ export function JoinButtons({ evaluationId, inviteCode, tests, selectedTestId, s
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {tests.map((test) => {
         const isSelected = selectedTestId === test.id;
-        const status = statuses[test.id];
+        const statusInfo = statuses[test.id];
+        const status = statusInfo?.status;
+        const hasAnswers = statusInfo?.hasAnswers;
         const isCompleted = status === 'COMPLETED';
-        const isActive = status === 'ACTIVE';
-        const isCreated = status === 'CREATED';
-        const label = isCompleted ? 'Completed' : isActive ? 'Continue' : isCreated ? 'Start' : 'Start';
+        const isContinuable = status === 'ACTIVE' || (status !== undefined && hasAnswers);
+        const label = isCompleted ? 'Completed' : isContinuable ? 'Continue' : 'Start';
         return (
           <div
             key={test.id}

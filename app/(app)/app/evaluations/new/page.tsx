@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/src/db/prisma';
 import { requireUser } from '@/src/auth/session';
-import { generateUniqueInviteCode } from '@/src/db/inviteCodes';
+import { generateInviteToken, hashInviteToken } from '@/src/auth/inviteTokens';
 import styles from '../styles.module.css';
 import { EvaluationBuilderForm } from './ui';
 
@@ -10,14 +10,9 @@ const createEvaluationSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   packageId: z.string().cuid(),
   tests: z.array(z.string().cuid()).min(1, 'Select at least one test'),
-  createInvites: z.boolean().optional(),
-  inviteCount: z.number().int().min(1).max(500).optional(),
+  inviteCount: z.number().int().min(1).max(500).default(1),
   inviteLabels: z.array(z.string()).optional(),
   participantFeedbackMode: z.enum(['THANK_YOU_ONLY', 'CAMOUFLAGE']).default('THANK_YOU_ONLY'),
-}).superRefine((data, ctx) => {
-  if (data.createInvites && !data.inviteCount) {
-    ctx.addIssue({ code: 'custom', message: 'Invite count is required' });
-  }
 });
 
 function chooseDefaultCamouflageSets(
@@ -62,8 +57,7 @@ async function createEvaluationAction(formData: FormData) {
   const name = formData.get('name');
   const packageId = formData.get('packageId');
   const tests = formData.getAll('tests');
-  const createInvites = formData.get('createInvites') === 'on';
-  const inviteCount = Number(formData.get('inviteCount') ?? 0);
+  const inviteCount = Number(formData.get('inviteCount') ?? 1);
   const participantFeedbackMode = formData.get('participantFeedbackMode');
   const inviteLabelsRaw = formData.get('inviteLabels');
   const inviteLabels = typeof inviteLabelsRaw === 'string'
@@ -77,9 +71,8 @@ async function createEvaluationAction(formData: FormData) {
     name: typeof name === 'string' ? name.trim() : '',
     packageId: typeof packageId === 'string' ? packageId : '',
     tests: tests.filter((value): value is string => typeof value === 'string'),
-    createInvites,
-    inviteCount: createInvites && !Number.isNaN(inviteCount) ? inviteCount : undefined,
-    inviteLabels: createInvites ? inviteLabels : [],
+    inviteCount: Number.isNaN(inviteCount) ? 1 : inviteCount,
+    inviteLabels,
     participantFeedbackMode:
       participantFeedbackMode === 'CAMOUFLAGE' || participantFeedbackMode === 'THANK_YOU_ONLY'
         ? participantFeedbackMode
@@ -135,21 +128,20 @@ async function createEvaluationAction(formData: FormData) {
     })),
   });
 
-  if (parsed.data.createInvites && parsed.data.inviteCount) {
-    const invites = [] as { evaluationId: string; code: string; label?: string | null }[];
-    const labels = parsed.data.inviteLabels ?? [];
-    for (let i = 0; i < parsed.data.inviteCount; i += 1) {
-      const code = await generateUniqueInviteCode();
-      invites.push({
-        evaluationId: evaluation.id,
-        code,
-        label: labels[i] ?? null,
-      });
-    }
+  const invites = [] as { evaluationId: string; token: string; tokenHash: string; alias?: string | null }[];
+  const labels = parsed.data.inviteLabels ?? [];
+  for (let i = 0; i < parsed.data.inviteCount; i += 1) {
+    const token = generateInviteToken();
+    invites.push({
+      evaluationId: evaluation.id,
+      token,
+      tokenHash: hashInviteToken(token),
+      alias: labels[i] ?? null,
+    });
+  }
 
-    if (invites.length) {
-      await prisma.evaluationInvite.createMany({ data: invites });
-    }
+  if (invites.length) {
+    await prisma.invite.createMany({ data: invites });
   }
 
   redirect(`/app/evaluations/${evaluation.id}`);

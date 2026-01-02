@@ -12,9 +12,9 @@ export async function joinEvaluationTest(evaluationId: string, testDefinitionId:
   });
 }
 
-export async function joinInviteTest(inviteCode: string, testDefinitionId: string) {
-  return apiFetch<JoinEvaluationResponse>('/api/join', {
+export async function joinInviteTest(evaluationId: string, inviteToken: string, testDefinitionId: string) {
+  return apiFetch<JoinEvaluationResponse>('/api/join/invite', {
     method: 'POST',
-    body: { inviteCode, testDefinitionId },
+    body: { evaluationId, inviteToken, testDefinitionId },
   });
 }

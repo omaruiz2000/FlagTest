@@ -100,19 +100,20 @@ model Evaluation {
   updatedAt      DateTime           @updatedAt
   sessions       TestSession[]
   tests          EvaluationTest[]
-  invites        EvaluationInvite[]
+  invites        Invite[]
 
   @@index([deletedAt])
   @@index([ownerUserId])
   @@index([organizationId])
 }
 
-model EvaluationInvite {
+model Invite {
   id           String        @id @default(cuid())
   evaluation   Evaluation    @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
   evaluationId String
-  code         String        @unique
-  label        String?
+  token        String        @unique
+  tokenHash    String        @unique
+  alias        String?
   createdAt    DateTime      @default(now())
   sessions     TestSession[]
 
@@ -161,7 +162,7 @@ model TestSession {
   participantTokenHash String?
   evaluation           Evaluation?       @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
   evaluationId         String?
-  invite               EvaluationInvite? @relation(fields: [inviteId], references: [id], onDelete: SetNull)
+  invite               Invite?           @relation(fields: [inviteId], references: [id], onDelete: SetNull)
   inviteId             String?
   studentRecord        StudentRecord?    @relation(fields: [studentRecordId], references: [id], onDelete: SetNull)
   studentRecordId      String?

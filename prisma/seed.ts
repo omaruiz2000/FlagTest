@@ -1,5 +1,6 @@
 import { PrismaClient, OrgRole, EvaluationStatus, ParticipantFeedbackMode } from '@prisma/client';
 import argon2 from 'argon2';
+import { generateInviteToken, hashInviteToken } from '../src/auth/inviteTokens';
 
 const prisma = new PrismaClient();
 
@@ -104,6 +105,61 @@ async function main() {
             ],
             scoring: [
               { dimension: 'initiative', delta: 1 },
+            ],
+          },
+        ],
+      },
+    },
+  });
+
+  const valuesTestDefinition = await prisma.testDefinition.upsert({
+    where: {
+      slug_version: { slug: 'scenario-values', version: 1 },
+    },
+    update: {},
+    create: {
+      slug: 'scenario-values',
+      version: 1,
+      title: 'Values Reflection',
+      description: 'Short prompts to reflect on everyday choices.',
+      styleId: 'classic',
+      definition: {
+        version: 1,
+        slug: 'scenario-values',
+        title: 'Values Reflection',
+        styleId: 'classic',
+        dimensions: [
+          { id: 'empathy', title: 'Empatía' },
+          { id: 'responsibility', title: 'Responsabilidad' },
+        ],
+        items: [
+          {
+            id: 'values-1',
+            widgetType: 'scenario_choice',
+            prompt: 'A friend forgot their lunch. What do you do?',
+            scenario: 'You notice they are embarrassed and quiet.',
+            options: [
+              { id: 'a', label: 'Share yours', description: 'Offer half of what you brought.' },
+              { id: 'b', label: 'Find help', description: 'Ask a teacher if there are extra snacks.' },
+              { id: 'c', label: 'Do nothing', description: 'It is not your responsibility.' },
+            ],
+            scoring: [
+              { dimension: 'empathy', delta: 1 },
+              { dimension: 'responsibility', delta: 1 },
+            ],
+          },
+          {
+            id: 'values-2',
+            widgetType: 'scenario_choice',
+            prompt: 'A group project needs one last push.',
+            scenario: 'Everyone is tired and wants to stop.',
+            options: [
+              { id: 'a', label: 'Suggest a break', description: 'Pause for five minutes then finish together.' },
+              { id: 'b', label: 'Finish alone', description: 'Ask to take the work home and submit it.' },
+              { id: 'c', label: 'Ignore it', description: 'Let someone else figure it out.' },
+            ],
+            scoring: [
+              { dimension: 'responsibility', delta: 1 },
             ],
           },
         ],
@@ -364,18 +420,42 @@ async function main() {
     },
   });
 
+  await prisma.evaluationTest.upsert({
+    where: {
+      evaluationId_testDefinitionId: {
+        evaluationId: 'demo-evaluation',
+        testDefinitionId: valuesTestDefinition.id,
+      },
+    },
+    update: {
+      sortOrder: 2,
+      camouflageSetId: explorationSet.id,
+    },
+    create: {
+      evaluationId: 'demo-evaluation',
+      testDefinitionId: valuesTestDefinition.id,
+      sortOrder: 2,
+      camouflageSetId: explorationSet.id,
+    },
+  });
+
   const demoInvites = [
-    { code: 'INVDEMO1', label: 'Pedro' },
-    { code: 'INVDEMO2', label: 'Alexia' },
-    { code: 'INVDEMO3', label: 'Jordan' },
+    { token: 'INVDEMO1TOKEN', alias: 'Pedro' },
+    { token: 'INVDEMO2TOKEN', alias: 'Alexia' },
+    { token: 'INVDEMO3TOKEN', alias: 'Jordan' },
   ];
 
   await Promise.all(
     demoInvites.map((invite) =>
-      prisma.evaluationInvite.upsert({
-        where: { code: invite.code },
-        update: { label: invite.label, evaluationId: 'demo-evaluation' },
-        create: { evaluationId: 'demo-evaluation', code: invite.code, label: invite.label },
+      prisma.invite.upsert({
+        where: { token: invite.token },
+        update: { alias: invite.alias, evaluationId: 'demo-evaluation', tokenHash: hashInviteToken(invite.token) },
+        create: {
+          evaluationId: 'demo-evaluation',
+          token: invite.token,
+          tokenHash: hashInviteToken(invite.token),
+          alias: invite.alias,
+        },
       }),
     ),
   );
@@ -424,6 +504,25 @@ async function main() {
   await prisma.testPackageItem.upsert({
     where: {
       testPackageId_testDefinitionId: {
+        testPackageId: friendsPackage.id,
+        testDefinitionId: valuesTestDefinition.id,
+      },
+    },
+    update: {
+      sortOrder: 2,
+      isFree: true,
+    },
+    create: {
+      testPackageId: friendsPackage.id,
+      testDefinitionId: valuesTestDefinition.id,
+      sortOrder: 2,
+      isFree: true,
+    },
+  });
+
+  await prisma.testPackageItem.upsert({
+    where: {
+      testPackageId_testDefinitionId: {
         testPackageId: couplesPackage.id,
         testDefinitionId: testDefinition.id,
       },
@@ -436,6 +535,25 @@ async function main() {
       testPackageId: couplesPackage.id,
       testDefinitionId: testDefinition.id,
       sortOrder: 1,
+      isFree: false,
+    },
+  });
+
+  await prisma.testPackageItem.upsert({
+    where: {
+      testPackageId_testDefinitionId: {
+        testPackageId: couplesPackage.id,
+        testDefinitionId: valuesTestDefinition.id,
+      },
+    },
+    update: {
+      sortOrder: 2,
+      isFree: false,
+    },
+    create: {
+      testPackageId: couplesPackage.id,
+      testDefinitionId: valuesTestDefinition.id,
+      sortOrder: 2,
       isFree: false,
     },
   });

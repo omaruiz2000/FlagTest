@@ -1,5 +1,6 @@
 import { TestSessionStatus } from '@prisma/client';
 import { prisma } from '../prisma';
+import { hashInviteToken } from '@/src/auth/inviteTokens';
 
 export function findEvaluationById(id: string) {
   return prisma.evaluation.findUnique({
@@ -36,9 +37,10 @@ export async function getEvaluationWithTests(evaluationId: string) {
   return { ...evaluation, tests };
 }
 
-export function findInviteByCodeWithEvaluation(code: string) {
-  return prisma.evaluationInvite.findUnique({
-    where: { code },
+export function findInviteByTokenWithEvaluation(token: string) {
+  const tokenHash = hashInviteToken(token);
+  return prisma.invite.findUnique({
+    where: { tokenHash },
     include: {
       evaluation: {
         select: {
@@ -70,38 +72,38 @@ export async function findEvaluationTestStatuses(
   testDefinitionIds: string[],
 ) {
   if (!participantId || testDefinitionIds.length === 0) {
-    return {} as Record<string, string>;
+    return {} as Record<string, { status: TestSessionStatus; hasAnswers: boolean }>;
   }
 
   const attemptKeys = testDefinitionIds.map((testId) => `open:${evaluationId}:${participantId}:${testId}`);
   const sessions = await prisma.testSession.findMany({
     where: { attemptKey: { in: attemptKeys } },
-    select: { attemptKey: true, status: true },
+    select: { attemptKey: true, status: true, _count: { select: { answers: true } } },
   });
 
-  return sessions.reduce<Record<string, string>>((acc, session) => {
+  return sessions.reduce<Record<string, { status: TestSessionStatus; hasAnswers: boolean }>>((acc, session) => {
     const segments = session.attemptKey.split(':');
     const testId = segments[segments.length - 1];
-    acc[testId] = session.status;
+    acc[testId] = { status: session.status, hasAnswers: session._count.answers > 0 || session.status === 'ACTIVE' };
     return acc;
   }, {});
 }
 
 export async function findInviteTestStatuses(inviteId: string, testDefinitionIds: string[]) {
   if (!inviteId || testDefinitionIds.length === 0) {
-    return {} as Record<string, string>;
+    return {} as Record<string, { status: TestSessionStatus; hasAnswers: boolean }>;
   }
 
-  const attemptKeys = testDefinitionIds.map((testId) => `inv:${inviteId}:${testId}`);
+  const attemptKeys = testDefinitionIds.map((testId) => `inv:${inviteId}:test:${testId}`);
   const sessions = await prisma.testSession.findMany({
     where: { attemptKey: { in: attemptKeys } },
-    select: { attemptKey: true, status: true },
+    select: { attemptKey: true, status: true, _count: { select: { answers: true } } },
   });
 
-  return sessions.reduce<Record<string, TestSessionStatus>>((acc, session) => {
+  return sessions.reduce<Record<string, { status: TestSessionStatus; hasAnswers: boolean }>>((acc, session) => {
     const segments = session.attemptKey.split(':');
     const testId = segments[segments.length - 1];
-    acc[testId] = session.status;
+    acc[testId] = { status: session.status, hasAnswers: session._count.answers > 0 || session.status === 'ACTIVE' };
     return acc;
   }, {});
 }

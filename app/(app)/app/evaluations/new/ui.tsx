@@ -36,8 +36,7 @@ export function EvaluationBuilderForm({ packages, action }: Props) {
   const [pending, setPending] = useState(false);
   const selectedPackage = useMemo(() => packages.find((pkg) => pkg.id === selectedPackageId), [packages, selectedPackageId]);
   const [error, setError] = useState<string | undefined>();
-  const [createInvites, setCreateInvites] = useState(false);
-  const [inviteCount, setInviteCount] = useState(3);
+  const [inviteCount, setInviteCount] = useState(1);
   const [inviteLabels, setInviteLabels] = useState('');
   const [participantFeedbackMode, setParticipantFeedbackMode] = useState<'THANK_YOU_ONLY' | 'CAMOUFLAGE'>('THANK_YOU_ONLY');
 
@@ -135,49 +134,30 @@ export function EvaluationBuilderForm({ packages, action }: Props) {
       </label>
 
       <div className={styles.invites}>
-        <label className={styles.fieldCheckbox}>
+        <div className={styles.field}>
+          <span>Number of participants (invites)</span>
           <input
-            type="checkbox"
-            name="createInvites"
-            checked={createInvites}
-            onChange={(event) => setCreateInvites(event.target.checked)}
+            type="number"
+            name="inviteCount"
+            min={1}
+            max={500}
+            value={inviteCount}
+            onChange={(event) => setInviteCount(Number(event.target.value))}
+            required
           />
-          <div>
-            <div className={styles.testTitle}>Participants (Invites)</div>
-            <p className={styles.testDescription}>
-              Create unique invite links for participants and optionally add labels.
-            </p>
-          </div>
-        </label>
-
-        <div className={styles.inviteFields} aria-hidden={!createInvites}>
-          <label className={styles.field}>
-            <span>Number of participants</span>
-            <input
-              type="number"
-              name="inviteCount"
-              min={1}
-              max={500}
-              value={inviteCount}
-              onChange={(event) => setInviteCount(Number(event.target.value))}
-              disabled={!createInvites}
-              required={createInvites}
-            />
-          </label>
-
-          <label className={styles.field}>
-            <span>Labels (one per line, optional)</span>
-            <textarea
-              name="inviteLabels"
-              placeholder={'Pedrito\nAlexia\nStudent C'}
-              value={inviteLabels}
-              onChange={(event) => setInviteLabels(event.target.value)}
-              disabled={!createInvites}
-              rows={4}
-            />
-            <span className={styles.helper}>Labels will be applied in order.</span>
-          </label>
         </div>
+
+        <label className={styles.field}>
+          <span>Labels (one per line, optional)</span>
+          <textarea
+            name="inviteLabels"
+            placeholder={'Pedrito\nAlexia\nStudent C'}
+            value={inviteLabels}
+            onChange={(event) => setInviteLabels(event.target.value)}
+            rows={4}
+          />
+          <span className={styles.helper}>Labels will be applied in order.</span>
+        </label>
       </div>
 
       {error ? <p className={styles.error}>{error}</p> : null}

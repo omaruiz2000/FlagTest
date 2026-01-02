@@ -40,7 +40,7 @@ async function loadEvaluation(evaluationId: string, ownerId: string) {
       sessions: {
         where: { evaluationId },
         include: {
-          invite: { select: { label: true } },
+          invite: { select: { alias: true } },
           testDefinition: { select: { id: true, title: true } },
           scores: true,
         },
@@ -67,9 +67,9 @@ export default async function EvaluationPage({ params }: { params: { evaluationI
 
     return {
       id: invite.id,
-      label: invite.label || `Invite #${index + 1}`,
-      code: invite.code,
-      link: `${APP_BASE_URL}/join?inv=${invite.code}`,
+      label: invite.alias || `Invite #${index + 1}`,
+      token: invite.token,
+      link: `${APP_BASE_URL}/join?e=${evaluation.id}&inv=${invite.token}`,
       completedTests,
     };
   });
@@ -102,7 +102,7 @@ export default async function EvaluationPage({ params }: { params: { evaluationI
 
   const sessions = evaluation.sessions.map((session) => ({
     id: session.id,
-    label: session.invite?.label || 'Open participant',
+    label: session.invite?.alias || 'Open participant',
     testTitle: session.testDefinition?.title || 'Test',
     status: session.status,
     completedAt: session.completedAt,

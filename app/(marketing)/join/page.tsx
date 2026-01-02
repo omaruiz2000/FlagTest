@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import {
   getEvaluationWithTests,
   findEvaluationTestStatuses,
-  findInviteByCodeWithEvaluation,
+  findInviteByTokenWithEvaluation,
   findInviteTestStatuses,
 } from '@/src/db/repositories/evaluations';
 import { CodeJoinForm } from './CodeJoinForm';
@@ -19,13 +19,17 @@ function getParamValue(value?: string | string[] | null) {
 }
 
 export default async function JoinPage({ searchParams }: JoinPageProps) {
-  const inviteCode = getParamValue(searchParams?.inv);
+  const inviteToken = getParamValue(searchParams?.inv);
   const evaluationId = getParamValue(searchParams?.e);
   const selectedTestId = getParamValue(searchParams?.t);
 
-  if (inviteCode) {
-    const invite = await findInviteByCodeWithEvaluation(inviteCode);
-    if (!invite || !invite.evaluation) {
+  if (inviteToken) {
+    if (!evaluationId) {
+      return notFound();
+    }
+
+    const invite = await findInviteByTokenWithEvaluation(inviteToken);
+    if (!invite || !invite.evaluation || invite.evaluation.id !== evaluationId) {
       return notFound();
     }
 
@@ -52,8 +56,8 @@ export default async function JoinPage({ searchParams }: JoinPageProps) {
         <h1 style={{ marginBottom: 12 }}>
           Join your evaluation: {invite.evaluation.name}
         </h1>
-        {invite.label ? (
-          <p style={{ margin: '0 0 6px', color: '#475569' }}>Invite: {invite.label}</p>
+        {invite.alias ? (
+          <p style={{ margin: '0 0 6px', color: '#475569' }}>Invite: {invite.alias}</p>
         ) : null}
         <p style={{ marginBottom: 24, color: '#475569' }}>
           Select a test below to start your evaluation.
@@ -62,7 +66,7 @@ export default async function JoinPage({ searchParams }: JoinPageProps) {
           <p style={{ marginBottom: 16, color: '#475569' }}>Selected test: {selectedTest.title}</p>
         ) : null}
         <JoinButtons
-          inviteCode={invite.code}
+          inviteToken={invite.token}
           evaluationId={invite.evaluation.id}
           tests={visibleTests.length ? visibleTests : tests}
           selectedTestId={selectedTestId}
