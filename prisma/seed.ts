@@ -58,6 +58,10 @@ async function main() {
         slug: 'scenario-demo',
         title: 'Sample Scenario Choice',
         styleId: 'classic',
+        dimensions: [
+          { id: 'collaboration', title: 'Colaboración' },
+          { id: 'initiative', title: 'Iniciativa' },
+        ],
         items: [
           {
             id: 'scenario-1',
@@ -129,12 +133,14 @@ async function main() {
     { key: 'farero', title: 'El Farero', imageUrl: 'https://example.com/farero.png', sortOrder: 0 },
     { key: 'cartografo', title: 'La Cartógrafa', imageUrl: 'https://example.com/cartografa.png', sortOrder: 1 },
     { key: 'vigia', title: 'El Vigía', imageUrl: 'https://example.com/vigia.png', sortOrder: 2 },
+    { key: 'navegante', title: 'La Navegante', imageUrl: 'https://example.com/navegante.png', sortOrder: 3 },
   ];
 
   const teamworkCharacters = [
     { key: 'compas', title: 'La Brújula', imageUrl: 'https://example.com/brujula.png', sortOrder: 0 },
     { key: 'puente', title: 'El Puente', imageUrl: 'https://example.com/puente.png', sortOrder: 1 },
     { key: 'ancla', title: 'El Ancla', imageUrl: 'https://example.com/ancla.png', sortOrder: 2 },
+    { key: 'guia', title: 'La Guía', imageUrl: 'https://example.com/guia.png', sortOrder: 3 },
   ];
 
   await Promise.all(
@@ -184,6 +190,144 @@ async function main() {
       }),
     ),
   );
+
+  const slots = [
+    { key: 'LOW', rank: 1, title: 'Inicio' },
+    { key: 'MID_LOW', rank: 2, title: 'Explorando' },
+    { key: 'MID_HIGH', rank: 3, title: 'En marcha' },
+    { key: 'HIGH', rank: 4, title: 'Dominio' },
+  ];
+
+  await Promise.all(
+    slots.map((slot) =>
+      prisma.testCamouflageSlot.upsert({
+        where: { testDefinitionId_key: { testDefinitionId: testDefinition.id, key: slot.key } },
+        update: { rank: slot.rank, title: slot.title },
+        create: { ...slot, testDefinitionId: testDefinition.id },
+      }),
+    ),
+  );
+
+  const camouflageContent = [
+    {
+      setId: explorationSet.id,
+      characters: {
+        LOW: 'farero',
+        MID_LOW: 'cartografo',
+        MID_HIGH: 'vigia',
+        HIGH: 'navegante',
+      },
+      copy: {
+        LOW: {
+          headline: 'Pasos iniciales',
+          description: 'Estás tanteando el terreno y observando con calma.',
+          tips: ['Tómate un momento para preguntar qué necesitan otros', 'Celebra cada pequeño avance'],
+        },
+        MID_LOW: {
+          headline: 'Mirada atenta',
+          description: 'Notas detalles y comienzas a conectar las piezas.',
+          tips: ['Comparte tus hallazgos con el equipo', 'Prueba una acción pequeña y observa resultados'],
+        },
+        MID_HIGH: {
+          headline: 'Ruta en construcción',
+          description: 'Te atreves a proponer caminos y guiar a otras personas.',
+          tips: ['Valida tus ideas con alguien más', 'Ajusta el rumbo si encuentras mejores señales'],
+        },
+        HIGH: {
+          headline: 'Liderando la travesía',
+          description: 'Tu iniciativa y curiosidad inspiran a quienes te acompañan.',
+          tips: ['Da espacio para que otros exploren', 'Resume lo aprendido antes de seguir avanzando'],
+        },
+      },
+    },
+    {
+      setId: teamworkSet.id,
+      characters: {
+        LOW: 'compas',
+        MID_LOW: 'puente',
+        MID_HIGH: 'ancla',
+        HIGH: 'guia',
+      },
+      copy: {
+        LOW: {
+          headline: 'En sintonía',
+          description: 'Prefieres observar y escuchar antes de moverte.',
+          tips: ['Haz una pregunta que desbloquee al equipo', 'Comparte una idea sencilla para avanzar'],
+        },
+        MID_LOW: {
+          headline: 'Aliado activo',
+          description: 'Acompañas y conectas a quienes te rodean.',
+          tips: ['Reconoce los aportes de cada persona', 'Resume acuerdos breves para mantener claridad'],
+        },
+        MID_HIGH: {
+          headline: 'Ancla confiable',
+          description: 'Das soporte y estabilidad al grupo.',
+          tips: ['Comparte riesgos que ves en el camino', 'Pregunta cómo puedes destrabar a alguien'],
+        },
+        HIGH: {
+          headline: 'Guía colaborativa',
+          description: 'Inspirar y cuidar al equipo te sale natural.',
+          tips: ['Invita a otras voces antes de decidir', 'Divide los siguientes pasos en acciones claras'],
+        },
+      },
+    },
+  ];
+
+  for (const content of camouflageContent) {
+    for (const slot of slots) {
+      const characterKey = content.characters[slot.key as keyof typeof content.characters];
+      if (characterKey) {
+        const character = await prisma.camouflageCharacter.findUnique({
+          where: { setId_key: { setId: content.setId, key: characterKey } },
+        });
+
+        if (character) {
+          await prisma.testCamouflageMapping.upsert({
+            where: {
+              testDefinitionId_camouflageSetId_slotKey: {
+                testDefinitionId: testDefinition.id,
+                camouflageSetId: content.setId,
+                slotKey: slot.key,
+              },
+            },
+            update: { characterId: character.id },
+            create: {
+              testDefinitionId: testDefinition.id,
+              camouflageSetId: content.setId,
+              slotKey: slot.key,
+              characterId: character.id,
+            },
+          });
+        }
+      }
+
+      const slotCopy = content.copy[slot.key as keyof typeof content.copy];
+      if (slotCopy) {
+        await prisma.testCamouflageCopy.upsert({
+          where: {
+            testDefinitionId_camouflageSetId_slotKey: {
+              testDefinitionId: testDefinition.id,
+              camouflageSetId: content.setId,
+              slotKey: slot.key,
+            },
+          },
+          update: {
+            headline: slotCopy.headline,
+            description: slotCopy.description,
+            tips: slotCopy.tips,
+          },
+          create: {
+            testDefinitionId: testDefinition.id,
+            camouflageSetId: content.setId,
+            slotKey: slot.key,
+            headline: slotCopy.headline,
+            description: slotCopy.description,
+            tips: slotCopy.tips,
+          },
+        });
+      }
+    }
+  }
 
   await prisma.evaluation.upsert({
     where: { id: 'demo-evaluation' },

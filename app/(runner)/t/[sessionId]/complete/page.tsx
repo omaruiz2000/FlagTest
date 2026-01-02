@@ -4,7 +4,7 @@ import { prisma } from '@/src/db/prisma';
 import { readParticipantCookie, verifyParticipantTokenHash } from '@/src/auth/participant';
 import { validateTestDefinition } from '@/src/survey/registry';
 import { resolveStyle } from '@/src/survey/styles/registry';
-import { resolveCamouflage } from '@/src/reports/camouflage';
+import { computeSlotKeyForSession } from '@/src/survey/scoring/compute-slot';
 
 type CompletionProps = { params: { sessionId: string } };
 
@@ -17,8 +17,17 @@ export default async function CompletionPage({ params }: CompletionProps) {
   const session = await prisma.testSession.findUnique({
     where: { id: params.sessionId },
     include: {
-      testDefinition: true,
-      evaluation: { select: { participantFeedbackMode: true } },
+      testDefinition: {
+        include: {
+          camouflageOptions: {
+            where: { isActive: true },
+            orderBy: { sortOrder: 'asc' },
+            include: { camouflageSet: true },
+          },
+          camouflageSlots: { orderBy: { rank: 'asc' } },
+        },
+      },
+      evaluation: { select: { participantFeedbackMode: true, tests: true } },
       scores: true,
     },
   });
@@ -35,38 +44,64 @@ export default async function CompletionPage({ params }: CompletionProps) {
   const style = resolveStyle(testDefinition.styleId);
   const feedbackMode: ParticipantFeedbackMode = session.evaluation?.participantFeedbackMode ?? 'THANK_YOU_ONLY';
 
-  const archetype = feedbackMode === 'CAMOUFLAGE'
-    ? resolveCamouflage(session.scores.map((score) => ({ dimension: score.dimension, value: score.value })))
-    : null;
+  const availableSets = session.testDefinition.camouflageOptions;
+  const evaluationSetId = session.evaluation?.tests.find(
+    (test) => test.testDefinitionId === session.testDefinitionId,
+  )?.camouflageSetId;
+  const selectedSetId = evaluationSetId ?? availableSets[0]?.camouflageSetId;
+  const slotKey = computeSlotKeyForSession({ testDefinition: session.testDefinition, scores: session.scores });
+
+  const [mapping, copy] = selectedSetId
+    ? await Promise.all([
+        prisma.testCamouflageMapping.findUnique({
+          where: {
+            testDefinitionId_camouflageSetId_slotKey: {
+              testDefinitionId: session.testDefinitionId,
+              camouflageSetId: selectedSetId,
+              slotKey,
+            },
+          },
+          include: { character: true },
+        }),
+        prisma.testCamouflageCopy.findUnique({
+          where: {
+            testDefinitionId_camouflageSetId_slotKey: {
+              testDefinitionId: session.testDefinitionId,
+              camouflageSetId: selectedSetId,
+              slotKey,
+            },
+          },
+        }),
+      ])
+    : [null, null];
 
   return (
     <div className={style.classicShell}>
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '48px 12px', textAlign: 'center' }}>
-        {feedbackMode === 'CAMOUFLAGE' && archetype ? (
+        {feedbackMode === 'CAMOUFLAGE' && mapping && copy ? (
           <div style={{ display: 'grid', gap: 12 }}>
             <h1>¡Gracias por completar!</h1>
             <div style={{ border: '1px solid #e2e8f0', borderRadius: 12, padding: 18, background: '#fff' }}>
-              <p style={{ fontWeight: 600, margin: '0 0 4px' }}>Tu arquetipo</p>
-              <h2 style={{ margin: 0 }}>{archetype.title}</h2>
-              <p style={{ color: '#475569' }}>{archetype.description}</p>
-              <div style={{ textAlign: 'left', display: 'grid', gap: 12 }}>
-                <div>
-                  <p style={{ margin: '0 0 6px', fontWeight: 600 }}>Rasgos destacados</p>
+              {mapping.character.imageUrl ? (
+                <img
+                  src={mapping.character.imageUrl}
+                  alt={mapping.character.title}
+                  style={{ width: '100%', maxWidth: 260, margin: '0 auto', display: 'block' }}
+                />
+              ) : null}
+              <p style={{ fontWeight: 600, margin: '12px 0 4px' }}>{mapping.character.title}</p>
+              <h2 style={{ margin: 0 }}>{copy.headline}</h2>
+              <p style={{ color: '#475569' }}>{copy.description}</p>
+              {Array.isArray(copy.tips) && copy.tips.length ? (
+                <div style={{ textAlign: 'left', display: 'grid', gap: 8 }}>
+                  <p style={{ margin: '0 0 6px', fontWeight: 600 }}>Tips</p>
                   <ul style={{ margin: 0, paddingLeft: 18, color: '#334155' }}>
-                    {archetype.traits.map((trait) => (
-                      <li key={trait}>{trait}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <p style={{ margin: '0 0 6px', fontWeight: 600 }}>Pequeños tips</p>
-                  <ul style={{ margin: 0, paddingLeft: 18, color: '#334155' }}>
-                    {archetype.tips.map((tip) => (
+                    {copy.tips.map((tip: string) => (
                       <li key={tip}>{tip}</li>
                     ))}
                   </ul>
                 </div>
-              </div>
+              ) : null}
             </div>
             <p>Puedes cerrar esta ventana.</p>
           </div>
