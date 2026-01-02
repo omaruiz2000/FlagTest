@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { EvaluationDetails } from '@/src/components/evaluations/EvaluationDetails';
 import { requirePlatformAdmin } from '@/src/auth/admin';
 import { loadEvaluationDetails } from '@/src/db/repositories/evaluations';
-import styles from '../../evaluations/styles.module.css';
+import styles from '../../../evaluations/styles.module.css';
 
 type PageProps = { params: { evaluationId: string } };
 
