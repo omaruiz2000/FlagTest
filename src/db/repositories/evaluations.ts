@@ -127,17 +127,19 @@ export function loadEvaluationDetails(
           camouflageSet: { select: { id: true, title: true, slug: true } },
         },
       },
+      _count: { select: { rosterEntries: true } },
       invites: {
         orderBy: { createdAt: 'asc' },
         include: {
           sessions: { select: { status: true, testDefinitionId: true } },
         },
       },
+      rosterEntries: { select: { id: true, studentCode: true } },
       sessions: {
         where: { evaluationId },
         include: {
           invite: { select: { alias: true, id: true } },
-          rosterEntry: { select: { studentCode: true } },
+          rosterEntry: { select: { id: true, studentCode: true } },
           testDefinition: { select: { id: true, title: true } },
           scores: true,
         },

@@ -19,21 +19,25 @@ const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 export function EvaluationDetails({ evaluation, viewer, showResetControls = false }: EvaluationDetailsProps) {
   const isAdminView = viewer === 'admin';
+  const isSchool = evaluation._count.rosterEntries > 0;
+  const evaluationJoinLink = `${APP_BASE_URL}/join?e=${evaluation.id}`;
   const totalTests = evaluation.tests.length;
-  const invites = evaluation.invites.map((invite, index) => {
-    const completedTests = evaluation.tests.reduce((count, test) => {
-      const session = invite.sessions.find((session) => session.testDefinitionId === test.testDefinitionId);
-      return session?.status === 'COMPLETED' ? count + 1 : count;
-    }, 0);
+  const invites = isSchool
+    ? []
+    : evaluation.invites.map((invite, index) => {
+        const completedTests = evaluation.tests.reduce((count, test) => {
+          const session = invite.sessions.find((session) => session.testDefinitionId === test.testDefinitionId);
+          return session?.status === 'COMPLETED' ? count + 1 : count;
+        }, 0);
 
-    return {
-      id: invite.id,
-      label: invite.alias || `Invite #${index + 1}`,
-      token: invite.token,
-      link: `${APP_BASE_URL}/join?e=${evaluation.id}&inv=${invite.token}`,
-      completedTests,
-    };
-  });
+        return {
+          id: invite.id,
+          label: invite.alias || `Invite #${index + 1}`,
+          token: invite.token,
+          link: `${APP_BASE_URL}/join?e=${evaluation.id}&inv=${invite.token}`,
+          completedTests,
+        };
+      });
 
   const inviteLinks = invites.map(({ label, link }) => ({ label, link }));
   const completedInvites = invites.filter((invite) => totalTests > 0 && invite.completedTests === totalTests).length;
@@ -69,6 +73,7 @@ export function EvaluationDetails({ evaluation, viewer, showResetControls = fals
     completedAt: session.completedAt,
     scores: session.scores,
     inviteId: session.invite?.id,
+    rosterEntryId: session.rosterEntry?.id,
     testDefinitionId: session.testDefinitionId,
   }));
 
@@ -108,20 +113,33 @@ export function EvaluationDetails({ evaluation, viewer, showResetControls = fals
       <div className={styles.card}>
         <div className={styles.sectionHeader}>
           <div>
-            <h2 style={{ margin: 0 }}>Invites</h2>
+            <h2 style={{ margin: 0 }}>{isSchool ? 'Join link' : 'Invites'}</h2>
             <p className={styles.helper}>
-              Invita participantes para completar los tests. {completedInvites}/{invites.length || 0} invites completados.
+              {isSchool
+                ? 'Comparte este enlace con tus estudiantes. Ellos ingresarán su código para acceder a sus tests.'
+                : `Invita participantes para completar los tests. ${completedInvites}/${invites.length || 0} invites completados.`}
             </p>
           </div>
           <div className={styles.inviteActions}>
-            <CopyInviteLinksButton invites={inviteLinks} />
-            <a href={`/api/evaluations/${evaluation.id}/invites.csv`} className={styles.secondaryButton}>
-              Download CSV
-            </a>
+            {isSchool ? null : (
+              <>
+                <CopyInviteLinksButton invites={inviteLinks} />
+                <a href={`/api/evaluations/${evaluation.id}/invites.csv`} className={styles.secondaryButton}>
+                  Download CSV
+                </a>
+              </>
+            )}
           </div>
         </div>
 
-        {invites.length ? (
+        {isSchool ? (
+          <div className={styles.listItem} style={{ display: 'grid', gap: 8 }}>
+            <p style={{ margin: 0 }}>Enlace general para la evaluación:</p>
+            <a className={styles.monoLink} href={evaluationJoinLink}>
+              {evaluationJoinLink}
+            </a>
+          </div>
+        ) : invites.length ? (
           <table className={styles.inviteTable}>
             <thead>
               <tr>
@@ -156,16 +174,17 @@ export function EvaluationDetails({ evaluation, viewer, showResetControls = fals
 
       <div className={styles.list}>
         {evaluation.tests.map((item) => {
-          const joinHref = `/join?e=${evaluation.id}&t=${item.testDefinitionId}`;
           return (
             <div key={item.id} className={styles.listItem}>
               <h3>{item.testDefinition.title}</h3>
               {item.testDefinition.description ? <p>{item.testDefinition.description}</p> : null}
-              <ul className={styles.linkList}>
-                <li>
-                  Join link: <Link href={joinHref}>{joinHref}</Link>
-                </li>
-              </ul>
+              {isSchool ? null : (
+                <ul className={styles.linkList}>
+                  <li>
+                    Join link: <Link href={`/join?e=${evaluation.id}&t=${item.testDefinitionId}`}>{`/join?e=${evaluation.id}&t=${item.testDefinitionId}`}</Link>
+                  </li>
+                </ul>
+              )}
               {evaluation.participantFeedbackMode === 'CAMOUFLAGE' ? (
                 item.testDefinition.camouflageOptions.length ? (
                   <CamouflageSetSelect
@@ -234,11 +253,12 @@ export function EvaluationDetails({ evaluation, viewer, showResetControls = fals
                       </td>
                       {showResetControls ? (
                         <td>
-                          {session.inviteId && session.testDefinitionId ? (
+                          {session.testDefinitionId && (session.inviteId || session.rosterEntryId) ? (
                             <ResetTestButton
                               evaluationId={evaluation.id}
-                              inviteId={session.inviteId}
                               testDefinitionId={session.testDefinitionId}
+                              inviteId={session.inviteId}
+                              rosterEntryId={session.rosterEntryId}
                             />
                           ) : null}
                         </td>

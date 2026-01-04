@@ -6,11 +6,12 @@ import styles from '@/app/(app)/app/evaluations/styles.module.css';
 
 type Props = {
   evaluationId: string;
-  inviteId: string;
+  inviteId?: string | null;
+  rosterEntryId?: string | null;
   testDefinitionId: string;
 };
 
-export function ResetTestButton({ evaluationId, inviteId, testDefinitionId }: Props) {
+export function ResetTestButton({ evaluationId, inviteId, rosterEntryId, testDefinitionId }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +27,7 @@ export function ResetTestButton({ evaluationId, inviteId, testDefinitionId }: Pr
         const response = await fetch(`/api/admin/evaluations/${evaluationId}/reset`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ inviteId, testDefinitionId }),
+          body: JSON.stringify({ inviteId, rosterEntryId, testDefinitionId }),
         });
 
         if (!response.ok) {

@@ -6,8 +6,8 @@ import { validateTestDefinition } from '@/src/survey/registry';
 import { resolveStyle } from '@/src/survey/styles/registry';
 import { computeSlotKeyForSession } from '@/src/survey/scoring/compute-slot';
 import { joinParticipantSession, JoinError } from '@/src/services/server/join';
-import { findParticipantTestStatuses } from '@/src/db/repositories/evaluations';
 import { parseParticipantTokenFromAttemptKey } from '@/src/services/attemptKey';
+import { getParticipantProgress } from '@/src/services/participantProgress';
 
 type CompletionProps = { params: { sessionId: string } };
 
@@ -64,27 +64,16 @@ export default async function CompletionPage({ params }: CompletionProps) {
   const evaluation = session.evaluation;
   const participantToken = session.attemptKey ? parseParticipantTokenFromAttemptKey(session.attemptKey) : null;
 
-  let nextTestDefinitionId: string | null = null;
-  const nextMenuLink = evaluation?.id && participantToken ? `/join?e=${evaluation.id}&inv=${participantToken}` : '/join';
+  const progress = participantToken && evaluation && evaluation.status === 'OPEN'
+    ? await getParticipantProgress(evaluation.id, participantToken, evaluation.tests, session.testDefinitionId)
+    : null;
 
-  if (participantToken && evaluation && evaluation.status === 'OPEN') {
-    const orderedTests = evaluation.tests;
-    const statusMap = await findParticipantTestStatuses(
-      evaluation.id,
-      participantToken,
-      orderedTests.map((test) => test.testDefinitionId),
-    );
-    const currentIndex = orderedTests.findIndex((test) => test.testDefinitionId === session.testDefinitionId);
-
-    for (let index = currentIndex + 1; index < orderedTests.length; index += 1) {
-      const nextTestId = orderedTests[index].testDefinitionId;
-      const statusInfo = statusMap[nextTestId];
-      if (statusInfo?.status !== 'COMPLETED') {
-        nextTestDefinitionId = nextTestId;
-        break;
-      }
-    }
-  }
+  const nextTestDefinitionId = progress?.nextIncompleteTestDefinitionId ?? null;
+  const nextMenuLink = evaluation?.id
+    ? participantToken
+      ? `/join?e=${evaluation.id}&inv=${participantToken}`
+      : `/join?e=${evaluation.id}`
+    : '/join';
 
   async function goToMenu() {
     'use server';
