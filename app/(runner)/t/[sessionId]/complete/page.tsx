@@ -55,7 +55,7 @@ export default async function CompletionPage({ params }: CompletionProps) {
         },
       },
       invite: { select: { id: true, token: true } },
-      evaluationRosterEntry: { select: { id: true } },
+      evaluationRosterEntry: { select: { id: true, code: true } },
       scores: true,
     },
   });
@@ -80,12 +80,15 @@ export default async function CompletionPage({ params }: CompletionProps) {
   const invite = session.invite;
   const evaluation = session.evaluation;
   const rosterEntryId = session.evaluationRosterEntry?.id;
+  const studentCode = session.evaluationRosterEntry?.code ?? null;
   const inviteToken = session.invite?.token ?? null;
 
   const joinLink = evaluation
     ? inviteToken
       ? `/join?e=${evaluation.id}&inv=${inviteToken}`
-      : `/join?e=${evaluation.id}`
+      : studentCode
+        ? `/join?e=${evaluation.id}&inv=${studentCode}`
+        : `/join?e=${evaluation.id}`
     : "/join";
 
   const orderedTests = evaluation?.tests ?? [];
@@ -128,9 +131,9 @@ export default async function CompletionPage({ params }: CompletionProps) {
       if (invite) {
         const result = await joinInviteSession(evaluation.id, invite.token, nextTestDefinitionId);
         redirect(`/t/${result.sessionId}`);
-      } else if (rosterEntryId) {
-        const result = await joinSchoolSession(evaluation.id, rosterEntryId, nextTestDefinitionId);
-        redirect(`/t/${result.sessionId}`);
+    } else if (rosterEntryId && studentCode) {
+      const result = await joinSchoolSession(evaluation.id, studentCode, nextTestDefinitionId);
+      redirect(`/t/${result.sessionId}`);
       } else {
         const result = await joinEvaluationSession(evaluation.id, nextTestDefinitionId);
         redirect(`/t/${result.sessionId}`);

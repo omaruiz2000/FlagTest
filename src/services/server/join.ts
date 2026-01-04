@@ -158,7 +158,7 @@ export async function joinInviteSession(evaluationId: string, inviteToken: strin
   return { sessionId: session.id, status: session.status };
 }
 
-export async function joinSchoolSession(evaluationId: string, rosterEntryId: string, testDefinitionId: string) {
+export async function joinSchoolSession(evaluationId: string, studentCode: string, testDefinitionId: string) {
   const evaluation = await prisma.evaluation.findFirst({
     where: { id: evaluationId, deletedAt: null },
     select: {
@@ -187,14 +187,14 @@ export async function joinSchoolSession(evaluationId: string, rosterEntryId: str
   }
 
   const rosterEntry = await prisma.evaluationRosterEntry.findFirst({
-    where: { id: rosterEntryId, evaluationId },
+    where: { evaluationId_code: { evaluationId, code: studentCode.trim() } },
   });
 
   if (!rosterEntry) {
     throw new JoinError('Invalid code', 400);
   }
 
-  const attemptKey = `school:${evaluationId}:${rosterEntryId}:${testDefinitionId}`;
+  const attemptKey = `school:${evaluationId}:${rosterEntry.id}:${testDefinitionId}`;
   const existingSession = await prisma.testSession.findUnique({ where: { attemptKey } });
 
   if (existingSession?.status === 'COMPLETED') {

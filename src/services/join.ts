@@ -32,9 +32,9 @@ export async function joinSchoolLookup(evaluationId: string, studentCode: string
   });
 }
 
-export async function joinSchoolTest(evaluationId: string, rosterEntryId: string, testDefinitionId: string) {
+export async function joinSchoolTest(evaluationId: string, studentCode: string, testDefinitionId: string) {
   return apiFetch<JoinEvaluationResponse>('/api/join/school', {
     method: 'POST',
-    body: { evaluationId, rosterEntryId, testDefinitionId },
+    body: { evaluationId, studentCode, testDefinitionId },
   });
 }

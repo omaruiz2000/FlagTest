@@ -6,7 +6,7 @@ const PARTICIPANT_COOKIE = 'ft_participant';
 
 const joinSchema = z.object({
   evaluationId: z.string().cuid(),
-  rosterEntryId: z.string().cuid(),
+  studentCode: z.string().min(1),
   testDefinitionId: z.string().cuid(),
 });
 
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   try {
     const { token, sessionId, status } = await joinSchoolSession(
       parsed.data.evaluationId,
-      parsed.data.rosterEntryId,
+      parsed.data.studentCode,
       parsed.data.testDefinitionId,
     );
 
