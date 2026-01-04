@@ -9,6 +9,7 @@ import {
 import { CodeJoinForm } from './CodeJoinForm';
 import { JoinButtons } from './JoinButtons';
 import { SchoolJoin } from './SchoolJoin';
+import { SCHOOL_PACKAGE_SLUG } from '@/src/constants/packages';
 
 type JoinPageProps = {
   searchParams?: { [key: string]: string | string[] | undefined };
@@ -98,7 +99,7 @@ export default async function JoinPage({ searchParams }: JoinPageProps) {
     return notFound();
   }
 
-  const isSchoolBundle = evaluation.testPackage?.slug === 'school-bundle';
+  const isSchoolBundle = evaluation.testPackage?.slug === SCHOOL_PACKAGE_SLUG;
   const tests = evaluation.tests.map((evaluationTest) => ({
     id: evaluationTest.testDefinition.id,
     title: evaluationTest.testDefinition.title,

@@ -20,7 +20,7 @@ export function isPlatformAdmin(user?: Pick<User, 'email'> | null) {
 export async function requirePlatformAdmin() {
   const user = await requireUser();
   if (!isPlatformAdmin(user)) {
-    redirect('/app?message=not-authorized');
+    redirect('/app/not-authorized');
   }
   return user;
 }

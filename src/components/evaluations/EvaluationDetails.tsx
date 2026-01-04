@@ -6,6 +6,7 @@ import { FeedbackModeForm } from '@/app/(app)/app/evaluations/[evaluationId]/Fee
 import { CopyInviteLinksButton } from '@/app/(app)/app/evaluations/[evaluationId]/InviteActions';
 import { EvaluationStatusControls } from './EvaluationStatusControls';
 import type { loadEvaluationDetails } from '@/src/db/repositories/evaluations';
+import { SCHOOL_PACKAGE_SLUG } from '@/src/constants/packages';
 
 type DetailedEvaluation = NonNullable<Awaited<ReturnType<typeof loadEvaluationDetails>>>;
 
@@ -19,7 +20,7 @@ const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 export function EvaluationDetails({ evaluation, viewer, showResetControls = false }: EvaluationDetailsProps) {
   const isAdminView = viewer === 'admin';
-  const isSchoolBundle = evaluation.testPackage?.slug === 'school-bundle';
+  const isSchoolBundle = evaluation.testPackage?.slug === SCHOOL_PACKAGE_SLUG;
   const totalTests = evaluation.tests.length;
   const invites = isSchoolBundle
     ? []

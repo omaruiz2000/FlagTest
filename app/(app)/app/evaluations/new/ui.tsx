@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import styles from '../styles.module.css';
+import { SCHOOL_PACKAGE_SLUG } from '@/src/constants/packages';
 
 type PackageItem = {
   id: string;
@@ -44,7 +45,7 @@ export function EvaluationBuilderForm({ packages, action }: Props) {
   const [rosterAccepted, setRosterAccepted] = useState(false);
   const [rosterSummary, setRosterSummary] = useState<{ valid: number; duplicates: number; invalid: number } | null>(null);
   const selectedPackageSlug = selectedPackage?.slug;
-  const isSchoolBundle = selectedPackageSlug === 'school-bundle';
+  const isSchoolBundle = selectedPackageSlug === SCHOOL_PACKAGE_SLUG;
 
   const handlePackageChange = (packageId: string) => {
     setSelectedPackageId(packageId);

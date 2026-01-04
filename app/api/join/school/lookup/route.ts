@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/src/db/prisma';
 import { findSchoolTestStatuses } from '@/src/db/repositories/evaluations';
 import { isRateLimited } from '@/src/utils/rateLimit';
+import { SCHOOL_PACKAGE_SLUG } from '@/src/constants/packages';
 
 const lookupSchema = z.object({
   evaluationId: z.string().cuid(),
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
     },
   });
 
-  if (!evaluation || evaluation.testPackage?.slug !== 'school-bundle' || evaluation.status === 'DRAFT') {
+  if (!evaluation || evaluation.testPackage?.slug !== SCHOOL_PACKAGE_SLUG || evaluation.status === 'DRAFT') {
     return NextResponse.json({ error: 'Invalid code' }, { status: 404 });
   }
 

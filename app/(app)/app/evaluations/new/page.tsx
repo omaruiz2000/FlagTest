@@ -5,6 +5,8 @@ import { requireUser } from '@/src/auth/session';
 import { generateInviteToken, hashInviteToken } from '@/src/auth/inviteTokens';
 import styles from '../styles.module.css';
 import { EvaluationBuilderForm } from './ui';
+import { ensureDefaultPackages, listActivePackagesWithItems } from '@/src/services/server/packages';
+import { SCHOOL_PACKAGE_SLUG } from '@/src/constants/packages';
 
 const createEvaluationSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -34,27 +36,11 @@ function chooseDefaultCamouflageSets(
   }, {});
 }
 
-async function loadPackages() {
-  return prisma.testPackage.findMany({
-    where: { isActive: true },
-    orderBy: { title: 'asc' },
-    include: {
-      items: {
-        orderBy: { sortOrder: 'asc' },
-        include: {
-          testDefinition: {
-            select: { id: true, title: true, description: true },
-          },
-        },
-      },
-    },
-  });
-}
-
 async function createEvaluationAction(formData: FormData) {
   'use server';
 
   const user = await requireUser();
+  await ensureDefaultPackages();
   const name = formData.get('name');
   const packageId = formData.get('packageId');
   const tests = formData.getAll('tests');
@@ -94,7 +80,7 @@ async function createEvaluationAction(formData: FormData) {
     return { error: 'Package not found' };
   }
 
-  const isSchoolBundle = targetPackage.slug === 'school-bundle';
+  const isSchoolBundle = targetPackage.slug === SCHOOL_PACKAGE_SLUG;
   const packageItems = await prisma.testPackageItem.findMany({
     where: { testPackageId: evalPackageId, testDefinitionId: { in: selectedTests } },
     orderBy: { sortOrder: 'asc' },
@@ -223,7 +209,7 @@ async function createEvaluationAction(formData: FormData) {
 
 export default async function NewEvaluationPage() {
   await requireUser();
-  const packages = await loadPackages();
+  const packages = await listActivePackagesWithItems();
 
   return (
     <section className={styles.page}>

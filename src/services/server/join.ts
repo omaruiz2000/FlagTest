@@ -3,8 +3,7 @@ import { cookies } from 'next/headers';
 import { prisma } from '@/src/db/prisma';
 import { hashInviteToken } from '@/src/auth/inviteTokens';
 import { generateParticipantToken, hashParticipantToken, setParticipantCookie } from '@/src/auth/participant';
-
-const SCHOOL_PACKAGE_SLUG = 'school-bundle';
+import { SCHOOL_PACKAGE_SLUG } from '@/src/constants/packages';
 
 export class JoinError extends Error {
   status: number;
