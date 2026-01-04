@@ -2,7 +2,7 @@
 CREATE TYPE "OrgRole" AS ENUM ('OWNER', 'ADMIN', 'MEMBER');
 
 -- CreateEnum
-CREATE TYPE "EvaluationStatus" AS ENUM ('DRAFT', 'ACTIVE', 'ARCHIVED');
+CREATE TYPE "EvaluationStatus" AS ENUM ('DRAFT', 'OPEN', 'CLOSED');
 
 -- CreateEnum
 CREATE TYPE "TestSessionStatus" AS ENUM ('CREATED', 'ACTIVE', 'COMPLETED', 'CANCELLED');
@@ -125,6 +125,7 @@ CREATE TABLE "TestSession" (
     "participantTokenHash" TEXT,
     "evaluationId" TEXT,
     "inviteId" TEXT,
+    "rosterEntryId" TEXT,
     "studentRecordId" TEXT,
     "groupId" TEXT,
     "initiatedById" TEXT,
@@ -134,6 +135,18 @@ CREATE TABLE "TestSession" (
     "lastSeenAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "TestSession_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EvaluationRosterEntry" (
+    "id" TEXT NOT NULL,
+    "evaluationId" TEXT NOT NULL,
+    "studentCode" TEXT NOT NULL,
+    "grade" TEXT,
+    "section" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "EvaluationRosterEntry_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -334,6 +347,15 @@ CREATE INDEX "TestSession_participantTokenHash_idx" ON "TestSession"("participan
 CREATE INDEX "TestSession_inviteId_idx" ON "TestSession"("inviteId");
 
 -- CreateIndex
+CREATE INDEX "TestSession_rosterEntryId_idx" ON "TestSession"("rosterEntryId");
+
+-- CreateIndex
+CREATE INDEX "EvaluationRosterEntry_evaluationId_studentCode_idx" ON "EvaluationRosterEntry"("evaluationId", "studentCode");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "EvaluationRosterEntry_evaluationId_studentCode_key" ON "EvaluationRosterEntry"("evaluationId", "studentCode");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "TestPackage_slug_key" ON "TestPackage"("slug");
 
 -- CreateIndex
@@ -439,6 +461,9 @@ ALTER TABLE "TestSession" ADD CONSTRAINT "TestSession_evaluationId_fkey" FOREIGN
 ALTER TABLE "TestSession" ADD CONSTRAINT "TestSession_inviteId_fkey" FOREIGN KEY ("inviteId") REFERENCES "Invite"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "TestSession" ADD CONSTRAINT "TestSession_rosterEntryId_fkey" FOREIGN KEY ("rosterEntryId") REFERENCES "EvaluationRosterEntry"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "TestSession" ADD CONSTRAINT "TestSession_studentRecordId_fkey" FOREIGN KEY ("studentRecordId") REFERENCES "StudentRecord"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -446,6 +471,9 @@ ALTER TABLE "TestSession" ADD CONSTRAINT "TestSession_groupId_fkey" FOREIGN KEY 
 
 -- AddForeignKey
 ALTER TABLE "TestSession" ADD CONSTRAINT "TestSession_initiatedById_fkey" FOREIGN KEY ("initiatedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EvaluationRosterEntry" ADD CONSTRAINT "EvaluationRosterEntry_evaluationId_fkey" FOREIGN KEY ("evaluationId") REFERENCES "Evaluation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "TestPackageItem" ADD CONSTRAINT "TestPackageItem_testPackageId_fkey" FOREIGN KEY ("testPackageId") REFERENCES "TestPackage"("id") ON DELETE CASCADE ON UPDATE CASCADE;
