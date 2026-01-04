@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/src/db/prisma';
+import { listCorePackagesWithItems } from '@/src/db/repositories/testPackages';
 import { requireUser } from '@/src/auth/session';
 import { generateInviteToken, hashInviteToken } from '@/src/auth/inviteTokens';
 import styles from '../styles.module.css';
@@ -42,24 +43,7 @@ function chooseDefaultCamouflageSets(
 }
 
 async function loadPackages() {
-  return prisma.testPackage.findMany({
-    where: { isActive: true },
-    orderBy: { title: 'asc' },
-    select: {
-      id: true,
-      slug: true,
-      title: true,
-      description: true,
-      items: {
-        orderBy: { sortOrder: 'asc' },
-        include: {
-          testDefinition: {
-            select: { id: true, title: true, description: true },
-          },
-        },
-      },
-    },
-  });
+  return listCorePackagesWithItems();
 }
 
 async function createEvaluationAction(formData: FormData) {

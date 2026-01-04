@@ -198,6 +198,12 @@
   font-weight: 600;
 }
 
+.actionsCell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .previewBox {
   border: 1px solid #e2e8f0;
   border-radius: 8px;

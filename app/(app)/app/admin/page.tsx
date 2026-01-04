@@ -10,7 +10,7 @@ export default async function AdminPage() {
       <p>System administration shortcuts.</p>
       <ul>
         <li>
-          <Link href="/app/packages">Manage packages</Link>
+          <Link href="/app/admin/packages">Manage packages</Link>
         </li>
         <li>
           <Link href="/app/admin/evaluations">Evaluations</Link>
