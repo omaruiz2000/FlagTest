@@ -6,7 +6,7 @@ import { validateTestDefinition } from '@/src/survey/registry';
 
 export default async function RunnerSessionPage({ params }: { params: { sessionId: string } }) {
   const participant = readParticipantCookie();
-  if (!participant || participant.sessionId !== params.sessionId) {
+  if (!participant?.token || participant.sessionId !== params.sessionId) {
     redirect('/join');
   }
 
@@ -25,7 +25,7 @@ export default async function RunnerSessionPage({ params }: { params: { sessionI
     notFound();
   }
 
-  if (!verifyParticipantTokenHash(participant.token, session.participantTokenHash)) {
+  if (!participant.token || !verifyParticipantTokenHash(participant.token, session.participantTokenHash)) {
     redirect('/join');
   }
 

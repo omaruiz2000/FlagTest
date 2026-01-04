@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { setParticipantCookie } from '@/src/auth/participant';
 import { JoinError, joinSchoolSession } from '@/src/services/server/join';
-
-const PARTICIPANT_COOKIE = 'ft_participant';
 
 const joinSchema = z.object({
   evaluationId: z.string().cuid(),
@@ -25,15 +24,8 @@ export async function POST(request: Request) {
       parsed.data.testDefinitionId,
     );
 
-    const res = NextResponse.json({ sessionId, status });
-    res.cookies.set(PARTICIPANT_COOKIE, `${sessionId}:${token}`, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-    });
-
-    return res;
+    setParticipantCookie(sessionId, token);
+    return NextResponse.json({ sessionId, status });
   } catch (error) {
     if (error instanceof JoinError) {
       const message = error.status === 400 ? 'Invalid code' : error.message;

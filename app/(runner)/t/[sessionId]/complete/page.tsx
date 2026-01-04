@@ -61,7 +61,11 @@ export default async function CompletionPage({ params }: CompletionProps) {
   });
 
   // ✅ protege participantTokenHash y participant.token
-  if (!session?.participantTokenHash || !verifyParticipantTokenHash(participant.token, session.participantTokenHash)) {
+  if (
+    !participant?.token ||
+    !session?.participantTokenHash ||
+    !verifyParticipantTokenHash(participant.token, session.participantTokenHash)
+  ) {
     redirect("/join");
   }
 

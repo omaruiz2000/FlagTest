@@ -43,7 +43,14 @@ export async function apiFetch<T = unknown>(path: string, options: ApiFetchOptio
     }
   }
 
-  const response = await fetch(path, {
+  const url = /^https?:\/\//.test(path)
+    ? path
+    : new URL(
+        path,
+        typeof window === 'undefined' ? process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' : window.location.origin,
+      ).toString();
+
+  const response = await fetch(url, {
     ...init,
     credentials: 'include',
     cache: 'no-store',
