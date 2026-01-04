@@ -186,7 +186,7 @@ export async function joinSchoolSession(evaluationId: string, studentCode: strin
     throw new JoinError('Test not available for this evaluation', 404);
   }
 
-  const rosterEntry = await prisma.evaluationRosterEntry.findFirst({
+  const rosterEntry = await prisma.evaluationRosterEntry.findUnique({
     where: { evaluationId_code: { evaluationId, code: studentCode.trim() } },
   });
 
