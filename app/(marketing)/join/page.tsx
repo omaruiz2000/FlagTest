@@ -5,11 +5,13 @@ import {
   findEvaluationTestStatuses,
   findInviteByTokenWithEvaluation,
   findInviteTestStatuses,
+  findSchoolTestStatuses,
 } from '@/src/db/repositories/evaluations';
 import { CodeJoinForm } from './CodeJoinForm';
 import { JoinButtons } from './JoinButtons';
 import { SchoolJoin } from './SchoolJoin';
 import { SCHOOL_PACKAGE_SLUG } from '@/src/constants/packages';
+import { prisma } from '@/src/db/prisma';
 
 type JoinPageProps = {
   searchParams?: { [key: string]: string | string[] | undefined };
@@ -24,6 +26,7 @@ export default async function JoinPage({ searchParams }: JoinPageProps) {
   const inviteToken = getParamValue(searchParams?.inv);
   const evaluationId = getParamValue(searchParams?.e);
   const selectedTestId = getParamValue(searchParams?.t);
+  const studentCode = getParamValue(searchParams?.code);
 
   if (inviteToken) {
     if (!evaluationId) {
@@ -107,12 +110,32 @@ export default async function JoinPage({ searchParams }: JoinPageProps) {
 
   const isClosed = evaluation.status === 'CLOSED';
   if (isSchoolBundle) {
+    const trimmedCode = studentCode?.trim();
+    const rosterEntry = trimmedCode
+      ? await prisma.evaluationRosterEntry.findUnique({
+          where: { evaluationId_code: { evaluationId: evaluation.id, code: trimmedCode } },
+          select: { id: true },
+        })
+      : null;
+
+    const statusMap = rosterEntry
+      ? await findSchoolTestStatuses(
+          evaluation.id,
+          rosterEntry.id,
+          evaluation.tests.map((test) => test.testDefinition.id),
+        )
+      : {};
+
     return (
       <SchoolJoin
         evaluationId={evaluation.id}
         evaluationName={evaluation.name}
         tests={tests}
         isEvaluationClosed={isClosed}
+        initialStudentCode={trimmedCode}
+        initialRosterEntryId={rosterEntry?.id ?? null}
+        initialStatusMap={statusMap}
+        initialError={studentCode && !rosterEntry ? 'Invalid code' : null}
       />
     );
   }
