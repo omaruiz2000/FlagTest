@@ -63,7 +63,7 @@ export function EvaluationDetails({ evaluation, viewer, showResetControls = fals
 
   const sessions = evaluation.sessions.map((session) => ({
     id: session.id,
-    label: session.invite?.alias || 'Open participant',
+    label: session.rosterEntry?.studentCode || session.invite?.alias || 'Open participant',
     testTitle: session.testDefinition?.title || 'Test',
     status: session.status,
     completedAt: session.completedAt,

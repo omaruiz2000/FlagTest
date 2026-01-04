@@ -5,8 +5,9 @@ import { readParticipantCookie, verifyParticipantTokenHash } from '@/src/auth/pa
 import { validateTestDefinition } from '@/src/survey/registry';
 import { resolveStyle } from '@/src/survey/styles/registry';
 import { computeSlotKeyForSession } from '@/src/survey/scoring/compute-slot';
-import { joinInviteSession, JoinError } from '@/src/services/server/join';
-import { findInviteTestStatuses } from '@/src/db/repositories/evaluations';
+import { joinParticipantSession, JoinError } from '@/src/services/server/join';
+import { findParticipantTestStatuses } from '@/src/db/repositories/evaluations';
+import { parseParticipantTokenFromAttemptKey } from '@/src/services/attemptKey';
 
 type CompletionProps = { params: { sessionId: string } };
 
@@ -40,7 +41,6 @@ export default async function CompletionPage({ params }: CompletionProps) {
           },
         },
       },
-      invite: { select: { id: true, token: true } },
       scores: true,
     },
   });
@@ -61,17 +61,19 @@ export default async function CompletionPage({ params }: CompletionProps) {
   const style = resolveStyle(testDefinition.styleId);
   const feedbackMode: ParticipantFeedbackMode = session.evaluation?.participantFeedbackMode ?? 'THANK_YOU_ONLY';
 
-  const invite = session.invite;
   const evaluation = session.evaluation;
+  const participantToken = session.attemptKey ? parseParticipantTokenFromAttemptKey(session.attemptKey) : null;
 
   let nextTestDefinitionId: string | null = null;
-  const nextMenuLink = evaluation?.id
-    ? `/join?e=${evaluation.id}${invite?.token ? `&inv=${invite.token}` : ''}`
-    : '/join';
+  const nextMenuLink = evaluation?.id && participantToken ? `/join?e=${evaluation.id}&inv=${participantToken}` : '/join';
 
-  if (invite && evaluation && evaluation.status === 'OPEN') {
+  if (participantToken && evaluation && evaluation.status === 'OPEN') {
     const orderedTests = evaluation.tests;
-    const statusMap = await findInviteTestStatuses(invite.id, orderedTests.map((test) => test.testDefinitionId));
+    const statusMap = await findParticipantTestStatuses(
+      evaluation.id,
+      participantToken,
+      orderedTests.map((test) => test.testDefinitionId),
+    );
     const currentIndex = orderedTests.findIndex((test) => test.testDefinitionId === session.testDefinitionId);
 
     for (let index = currentIndex + 1; index < orderedTests.length; index += 1) {
@@ -91,12 +93,12 @@ export default async function CompletionPage({ params }: CompletionProps) {
 
   async function startNextTest() {
     'use server';
-    if (!evaluation || !invite || !nextTestDefinitionId) {
+    if (!evaluation || !participantToken || !nextTestDefinitionId) {
       redirect(nextMenuLink);
     }
 
     try {
-      const result = await joinInviteSession(evaluation.id, invite.token, nextTestDefinitionId);
+      const result = await joinParticipantSession(evaluation.id, participantToken, nextTestDefinitionId);
       redirect(`/t/${result.sessionId}`);
     } catch (error) {
       if (error instanceof JoinError && error.status === 409) {

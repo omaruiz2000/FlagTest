@@ -106,6 +106,7 @@ model Evaluation {
   sessions       TestSession[]
   tests          EvaluationTest[]
   invites        Invite[]
+  rosterEntries  EvaluationRosterEntry[]
 
   @@index([deletedAt])
   @@index([ownerUserId])
@@ -170,6 +171,8 @@ model TestSession {
   evaluationId         String?
   invite               Invite?           @relation(fields: [inviteId], references: [id], onDelete: SetNull)
   inviteId             String?
+  rosterEntry          EvaluationRosterEntry? @relation(fields: [rosterEntryId], references: [id], onDelete: SetNull)
+  rosterEntryId        String?
   studentRecord        StudentRecord?    @relation(fields: [studentRecordId], references: [id], onDelete: SetNull)
   studentRecordId      String?
   group                Group?            @relation(fields: [groupId], references: [id], onDelete: SetNull)
@@ -185,6 +188,21 @@ model TestSession {
 
   @@index([participantTokenHash])
   @@index([inviteId])
+  @@index([rosterEntryId])
+}
+
+model EvaluationRosterEntry {
+  id            String      @id @default(cuid())
+  evaluation    Evaluation  @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  evaluationId  String
+  studentCode   String
+  grade         String?
+  section       String?
+  createdAt     DateTime    @default(now())
+  testSessions  TestSession[]
+
+  @@unique([evaluationId, studentCode])
+  @@index([evaluationId, studentCode])
 }
 
 model TestPackage {

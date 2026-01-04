@@ -198,6 +198,26 @@
   font-weight: 600;
 }
 
+.previewBox {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f8fafc;
+}
+
+.previewTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.previewTable th,
+.previewTable td {
+  padding: 8px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  font-size: 14px;
+}
+
 .monoLink {
   color: #1d4ed8;
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;

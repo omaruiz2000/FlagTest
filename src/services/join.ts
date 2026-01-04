@@ -5,16 +5,9 @@ export type JoinEvaluationResponse = {
   status?: string;
 };
 
-export async function joinEvaluationTest(evaluationId: string, testDefinitionId: string) {
+export async function joinEvaluationTest(evaluationId: string, testDefinitionId: string, inv: string) {
   return apiFetch<JoinEvaluationResponse>('/api/join', {
     method: 'POST',
-    body: { evaluationId, testDefinitionId },
-  });
-}
-
-export async function joinInviteTest(evaluationId: string, inviteToken: string, testDefinitionId: string) {
-  return apiFetch<JoinEvaluationResponse>('/api/join/invite', {
-    method: 'POST',
-    body: { evaluationId, inviteToken, testDefinitionId },
+    body: { evaluationId, testDefinitionId, inv },
   });
 }

@@ -3,6 +3,7 @@ import { Runner } from './Runner';
 import { prisma } from '@/src/db/prisma';
 import { readParticipantCookie, verifyParticipantTokenHash } from '@/src/auth/participant';
 import { validateTestDefinition } from '@/src/survey/registry';
+import { parseParticipantTokenFromAttemptKey } from '@/src/services/attemptKey';
 
 export default async function RunnerSessionPage({ params }: { params: { sessionId: string } }) {
   const participant = readParticipantCookie();
@@ -17,7 +18,6 @@ export default async function RunnerSessionPage({ params }: { params: { sessionI
       answers: true,
       scores: true,
       evaluation: { select: { id: true, status: true } },
-      invite: { select: { token: true } },
     },
   });
 
@@ -38,8 +38,9 @@ export default async function RunnerSessionPage({ params }: { params: { sessionI
   }
 
   if (session.evaluation?.status === 'CLOSED') {
-    const target = session.evaluation?.id
-      ? `/join?e=${session.evaluation.id}${session.invite?.token ? `&inv=${session.invite.token}` : ''}`
+    const tokenFromAttempt = session.attemptKey ? parseParticipantTokenFromAttemptKey(session.attemptKey) : null;
+    const target = session.evaluation?.id && tokenFromAttempt
+      ? `/join?e=${session.evaluation.id}&inv=${tokenFromAttempt}`
       : '/join';
     redirect(target);
   }

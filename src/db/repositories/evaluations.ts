@@ -1,6 +1,7 @@
 import { TestSessionStatus } from '@prisma/client';
 import { prisma } from '../prisma';
 import { hashInviteToken } from '@/src/auth/inviteTokens';
+import { buildAttemptKey } from '@/src/services/attemptKey';
 
 export function findEvaluationById(id: string) {
   return prisma.evaluation.findUnique({
@@ -67,43 +68,29 @@ export function findInviteByTokenWithEvaluation(token: string) {
   });
 }
 
-export async function findEvaluationTestStatuses(
+export async function findParticipantTestStatuses(
   evaluationId: string,
-  participantId: string,
+  participantToken: string,
   testDefinitionIds: string[],
 ) {
-  if (!participantId || testDefinitionIds.length === 0) {
+  if (!participantToken || testDefinitionIds.length === 0) {
     return {} as Record<string, { status: TestSessionStatus; hasAnswers: boolean }>;
   }
 
-  const attemptKeys = testDefinitionIds.map((testId) => `open:${evaluationId}:${participantId}:${testId}`);
+  const keyMap = new Map<string, string>();
+  testDefinitionIds.forEach((testId) => {
+    const attemptKey = buildAttemptKey(evaluationId, testId, participantToken);
+    keyMap.set(attemptKey, testId);
+  });
+
   const sessions = await prisma.testSession.findMany({
-    where: { attemptKey: { in: attemptKeys } },
+    where: { attemptKey: { in: Array.from(keyMap.keys()) } },
     select: { attemptKey: true, status: true, _count: { select: { answers: true } } },
   });
 
   return sessions.reduce<Record<string, { status: TestSessionStatus; hasAnswers: boolean }>>((acc, session) => {
-    const segments = session.attemptKey.split(':');
-    const testId = segments[segments.length - 1];
-    acc[testId] = { status: session.status, hasAnswers: session._count.answers > 0 || session.status === 'ACTIVE' };
-    return acc;
-  }, {});
-}
-
-export async function findInviteTestStatuses(inviteId: string, testDefinitionIds: string[]) {
-  if (!inviteId || testDefinitionIds.length === 0) {
-    return {} as Record<string, { status: TestSessionStatus; hasAnswers: boolean }>;
-  }
-
-  const attemptKeys = testDefinitionIds.map((testId) => `inv:${inviteId}:test:${testId}`);
-  const sessions = await prisma.testSession.findMany({
-    where: { attemptKey: { in: attemptKeys } },
-    select: { attemptKey: true, status: true, _count: { select: { answers: true } } },
-  });
-
-  return sessions.reduce<Record<string, { status: TestSessionStatus; hasAnswers: boolean }>>((acc, session) => {
-    const segments = session.attemptKey.split(':');
-    const testId = segments[segments.length - 1];
+    const testId = keyMap.get(session.attemptKey);
+    if (!testId) return acc;
     acc[testId] = { status: session.status, hasAnswers: session._count.answers > 0 || session.status === 'ACTIVE' };
     return acc;
   }, {});
@@ -150,6 +137,7 @@ export function loadEvaluationDetails(
         where: { evaluationId },
         include: {
           invite: { select: { alias: true, id: true } },
+          rosterEntry: { select: { studentCode: true } },
           testDefinition: { select: { id: true, title: true } },
           scores: true,
         },

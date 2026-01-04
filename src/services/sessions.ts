@@ -1,18 +1,14 @@
 import { apiFetch } from './http';
 
 export type JoinResponse = {
-  sessionId: string;
+  sessionId?: string;
+  ok?: boolean;
 };
 
-export async function joinWithCode(code: string, evaluationId?: string, testDefinitionId?: string): Promise<JoinResponse> {
-  const params = new URLSearchParams();
-  if (evaluationId) params.set('e', evaluationId);
-  if (testDefinitionId) params.set('t', testDefinitionId);
-  const path = params.size ? `/api/join?${params.toString()}` : '/api/join';
-
-  return apiFetch<JoinResponse>(path, {
+export async function joinWithCode(inv: string, evaluationId: string): Promise<JoinResponse> {
+  return apiFetch<JoinResponse>('/api/join', {
     method: 'POST',
-    body: { code },
+    body: { evaluationId, inv },
   });
 }
 
