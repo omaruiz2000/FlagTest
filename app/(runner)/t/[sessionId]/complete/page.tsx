@@ -18,7 +18,13 @@ export default async function CompletionPage({ params }: CompletionProps) {
 
   const session = await prisma.testSession.findUnique({
     where: { id: params.sessionId },
-    include: {
+    select: {
+      id: true,
+      status: true,
+      testDefinitionId: true,
+      participantTokenHash: true,
+      evaluationId: true,
+      attemptKey: true,
       testDefinition: {
         include: {
           camouflageOptions: {
@@ -44,7 +50,6 @@ export default async function CompletionPage({ params }: CompletionProps) {
       invite: { select: { id: true, token: true } },
       evaluationRosterEntry: { select: { id: true } },
       scores: true,
-      attemptKey: true,
     },
   });
 
