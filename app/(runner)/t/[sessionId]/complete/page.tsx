@@ -5,8 +5,8 @@ import { readParticipantCookie, verifyParticipantTokenHash } from '@/src/auth/pa
 import { validateTestDefinition } from '@/src/survey/registry';
 import { resolveStyle } from '@/src/survey/styles/registry';
 import { computeSlotKeyForSession } from '@/src/survey/scoring/compute-slot';
-import { joinInviteSession, JoinError } from '@/src/services/server/join';
-import { findInviteTestStatuses } from '@/src/db/repositories/evaluations';
+import { joinEvaluationSession, joinInviteSession, joinSchoolSession, JoinError } from '@/src/services/server/join';
+import { findEvaluationTestStatuses, findInviteTestStatuses, findSchoolTestStatuses } from '@/src/db/repositories/evaluations';
 
 type CompletionProps = { params: { sessionId: string } };
 
@@ -34,6 +34,7 @@ export default async function CompletionPage({ params }: CompletionProps) {
           id: true,
           status: true,
           participantFeedbackMode: true,
+          testPackage: { select: { slug: true } },
           tests: {
             orderBy: { sortOrder: 'asc' },
             select: { testDefinitionId: true, sortOrder: true, camouflageSetId: true },
@@ -41,7 +42,9 @@ export default async function CompletionPage({ params }: CompletionProps) {
         },
       },
       invite: { select: { id: true, token: true } },
+      evaluationRosterEntry: { select: { id: true } },
       scores: true,
+      attemptKey: true,
     },
   });
 
@@ -63,17 +66,30 @@ export default async function CompletionPage({ params }: CompletionProps) {
 
   const invite = session.invite;
   const evaluation = session.evaluation;
+  const rosterEntryId = session.evaluationRosterEntry?.id;
 
-  let nextTestDefinitionId: string | null = null;
-  const nextMenuLink = evaluation?.id
-    ? `/join?e=${evaluation.id}${invite?.token ? `&inv=${invite.token}` : ''}`
+  const joinLink = evaluation
+    ? invite
+      ? `/join?e=${evaluation.id}&inv=${invite.token}`
+      : `/join?e=${evaluation.id}`
     : '/join';
 
-  if (invite && evaluation && evaluation.status === 'OPEN') {
-    const orderedTests = evaluation.tests;
-    const statusMap = await findInviteTestStatuses(invite.id, orderedTests.map((test) => test.testDefinitionId));
-    const currentIndex = orderedTests.findIndex((test) => test.testDefinitionId === session.testDefinitionId);
+  const orderedTests = evaluation?.tests ?? [];
+  const currentIndex = orderedTests.findIndex((test) => test.testDefinitionId === session.testDefinitionId);
+  const statusMap = invite
+    ? await findInviteTestStatuses(invite.id, orderedTests.map((test) => test.testDefinitionId))
+    : rosterEntryId
+      ? await findSchoolTestStatuses(evaluation?.id ?? '', rosterEntryId, orderedTests.map((test) => test.testDefinitionId))
+      : evaluation
+        ? await findEvaluationTestStatuses(
+            evaluation.id,
+            session.attemptKey?.split(':')[2] ?? '',
+            orderedTests.map((test) => test.testDefinitionId),
+          )
+        : {};
 
+  let nextTestDefinitionId: string | null = null;
+  if (evaluation && evaluation.status === 'OPEN' && currentIndex >= 0) {
     for (let index = currentIndex + 1; index < orderedTests.length; index += 1) {
       const nextTestId = orderedTests[index].testDefinitionId;
       const statusInfo = statusMap[nextTestId];
@@ -86,21 +102,29 @@ export default async function CompletionPage({ params }: CompletionProps) {
 
   async function goToMenu() {
     'use server';
-    redirect(nextMenuLink);
+    redirect(joinLink);
   }
 
   async function startNextTest() {
     'use server';
-    if (!evaluation || !invite || !nextTestDefinitionId) {
-      redirect(nextMenuLink);
+    if (!evaluation || !nextTestDefinitionId) {
+      redirect(joinLink);
     }
 
     try {
-      const result = await joinInviteSession(evaluation.id, invite.token, nextTestDefinitionId);
-      redirect(`/t/${result.sessionId}`);
+      if (invite) {
+        const result = await joinInviteSession(evaluation.id, invite.token, nextTestDefinitionId);
+        redirect(`/t/${result.sessionId}`);
+      } else if (rosterEntryId) {
+        const result = await joinSchoolSession(evaluation.id, rosterEntryId, nextTestDefinitionId);
+        redirect(`/t/${result.sessionId}`);
+      } else {
+        const result = await joinEvaluationSession(evaluation.id, nextTestDefinitionId);
+        redirect(`/t/${result.sessionId}`);
+      }
     } catch (error) {
       if (error instanceof JoinError && error.status === 409) {
-        redirect(nextMenuLink);
+        redirect(joinLink);
       }
       throw error;
     }

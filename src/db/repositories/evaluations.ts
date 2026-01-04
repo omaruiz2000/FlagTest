@@ -184,7 +184,7 @@ export function loadEvaluationDetails(
         where: { evaluationId },
         include: {
           invite: { select: { alias: true, id: true } },
-          evaluationRosterEntry: { select: { code: true, grade: true, section: true } },
+          evaluationRosterEntry: { select: { id: true, code: true, grade: true, section: true } },
           testDefinition: { select: { id: true, title: true } },
           scores: true,
         },

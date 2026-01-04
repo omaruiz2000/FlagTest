@@ -73,6 +73,7 @@ export function EvaluationDetails({ evaluation, viewer, showResetControls = fals
     completedAt: session.completedAt,
     scores: session.scores,
     inviteId: session.invite?.id,
+    rosterEntryId: session.evaluationRosterEntry?.id,
     testDefinitionId: session.testDefinitionId,
   }));
 
@@ -266,10 +267,11 @@ export function EvaluationDetails({ evaluation, viewer, showResetControls = fals
                       </td>
                       {showResetControls ? (
                         <td>
-                          {session.inviteId && session.testDefinitionId ? (
+                          {(session.inviteId || session.rosterEntryId) && session.testDefinitionId ? (
                             <ResetTestButton
                               evaluationId={evaluation.id}
                               inviteId={session.inviteId}
+                              rosterEntryId={session.rosterEntryId}
                               testDefinitionId={session.testDefinitionId}
                             />
                           ) : null}
