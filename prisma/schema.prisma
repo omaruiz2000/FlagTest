@@ -32,20 +32,20 @@ enum ParticipantFeedbackMode {
 }
 
 model User {
-  id               String         @id @default(cuid())
-  email            String         @unique
-  passwordHash     String
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  memberships      OrgMember[]
-  sessions         AuthSession[]
-  createdOrgs      Organization[] @relation("CreatedOrganizations")
-  initiatedRuns    TestSession[]  @relation("InitiatedRuns")
-  createdGroups    Group[]        @relation("CreatedGroups")
-  groupMemberships GroupMember[]  @relation("GroupMemberships")
-  ownedEvaluations Evaluation[]   @relation("EvaluationOwner")
-  deletedEvaluations Evaluation[] @relation("EvaluationDeletedBy")
-  closedEvaluations Evaluation[]  @relation("EvaluationClosedBy")
+  id                 String         @id @default(cuid())
+  email              String         @unique
+  passwordHash       String
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  memberships        OrgMember[]
+  sessions           AuthSession[]
+  createdOrgs        Organization[] @relation("CreatedOrganizations")
+  initiatedRuns      TestSession[]  @relation("InitiatedRuns")
+  createdGroups      Group[]        @relation("CreatedGroups")
+  groupMemberships   GroupMember[]  @relation("GroupMemberships")
+  ownedEvaluations   Evaluation[]   @relation("EvaluationOwner")
+  deletedEvaluations Evaluation[]   @relation("EvaluationDeletedBy")
+  closedEvaluations  Evaluation[]   @relation("EvaluationClosedBy")
 }
 
 model AuthSession {
@@ -85,30 +85,30 @@ model OrgMember {
 }
 
 model Evaluation {
-  id             String             @id @default(cuid())
-  name           String
-  description    String?
-  status         EvaluationStatus   @default(DRAFT)
-  testPackage    TestPackage?       @relation(fields: [testPackageId], references: [id])
-  testPackageId  String?
-  isClosed       Boolean            @default(false)
-  closedAt       DateTime?
-  closedBy       User?              @relation("EvaluationClosedBy", fields: [closedByUserId], references: [id])
-  closedByUserId String?
+  id                      String                  @id @default(cuid())
+  name                    String
+  description             String?
+  status                  EvaluationStatus        @default(DRAFT)
+  testPackage             TestPackage?            @relation(fields: [testPackageId], references: [id])
+  testPackageId           String?
+  isClosed                Boolean                 @default(false)
+  closedAt                DateTime?
+  closedBy                User?                   @relation("EvaluationClosedBy", fields: [closedByUserId], references: [id])
+  closedByUserId          String?
   participantFeedbackMode ParticipantFeedbackMode @default(THANK_YOU_ONLY)
-  organization   Organization?      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  organizationId String?
-  ownerUser      User?              @relation("EvaluationOwner", fields: [ownerUserId], references: [id])
-  ownerUserId    String?
-  deletedAt      DateTime?
-  deletedBy      User?              @relation("EvaluationDeletedBy", fields: [deletedById], references: [id])
-  deletedById    String?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
-  sessions       TestSession[]
-  tests          EvaluationTest[]
-  invites        Invite[]
-  roster         EvaluationRosterEntry[]
+  organization            Organization?           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId          String?
+  ownerUser               User?                   @relation("EvaluationOwner", fields: [ownerUserId], references: [id])
+  ownerUserId             String?
+  deletedAt               DateTime?
+  deletedBy               User?                   @relation("EvaluationDeletedBy", fields: [deletedById], references: [id])
+  deletedById             String?
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+  sessions                TestSession[]
+  tests                   EvaluationTest[]
+  invites                 Invite[]
+  roster                  EvaluationRosterEntry[]
 
   @@index([deletedAt])
   @@index([ownerUserId])
@@ -142,20 +142,20 @@ model StudentRecord {
 }
 
 model TestDefinition {
-  id              String            @id @default(cuid())
-  slug            String
-  version         Int
-  title           String
-  description     String?
-  styleId         String            @default("classic")
-  definition      Json
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  evaluationTests EvaluationTest[]
-  packageItems    TestPackageItem[]
-  sessions        TestSession[]
-  camouflageOptions TestCamouflageOption[]
-  camouflageSlots   TestCamouflageSlot[]
+  id                 String                  @id @default(cuid())
+  slug               String
+  version            Int
+  title              String
+  description        String?
+  styleId            String                  @default("classic")
+  definition         Json
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  evaluationTests    EvaluationTest[]
+  packageItems       TestPackageItem[]
+  sessions           TestSession[]
+  camouflageOptions  TestCamouflageOption[]
+  camouflageSlots    TestCamouflageSlot[]
   camouflageMappings TestCamouflageMapping[]
   camouflageCopies   TestCamouflageCopy[]
 
@@ -163,30 +163,30 @@ model TestDefinition {
 }
 
 model TestSession {
-  id                   String            @id @default(cuid())
-  status               TestSessionStatus @default(CREATED)
-  attemptKey           String            @unique
-  testDefinition       TestDefinition    @relation(fields: [testDefinitionId], references: [id])
-  testDefinitionId     String
-  participantTokenHash String?
-  evaluation           Evaluation?       @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
-  evaluationId         String?
-  invite               Invite?           @relation(fields: [inviteId], references: [id], onDelete: SetNull)
-  inviteId             String?
-  evaluationRosterEntry EvaluationRosterEntry? @relation(fields: [evaluationRosterEntryId], references: [id], onDelete: SetNull)
+  id                      String                 @id @default(cuid())
+  status                  TestSessionStatus      @default(CREATED)
+  attemptKey              String                 @unique
+  testDefinition          TestDefinition         @relation(fields: [testDefinitionId], references: [id])
+  testDefinitionId        String
+  participantTokenHash    String?
+  evaluation              Evaluation?            @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  evaluationId            String?
+  invite                  Invite?                @relation(fields: [inviteId], references: [id], onDelete: SetNull)
+  inviteId                String?
+  evaluationRosterEntry   EvaluationRosterEntry? @relation(fields: [evaluationRosterEntryId], references: [id], onDelete: SetNull)
   evaluationRosterEntryId String?
-  studentRecord        StudentRecord?    @relation(fields: [studentRecordId], references: [id], onDelete: SetNull)
-  studentRecordId      String?
-  group                Group?            @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  groupId              String?
-  initiatedBy          User?             @relation("InitiatedRuns", fields: [initiatedById], references: [id], onDelete: SetNull)
-  initiatedById        String?
-  startedAt            DateTime?
-  completedAt          DateTime?
-  createdAt            DateTime          @default(now())
-  lastSeenAt           DateTime          @default(now())
-  answers              Answer[]
-  scores               Score[]
+  studentRecord           StudentRecord?         @relation(fields: [studentRecordId], references: [id], onDelete: SetNull)
+  studentRecordId         String?
+  group                   Group?                 @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  groupId                 String?
+  initiatedBy             User?                  @relation("InitiatedRuns", fields: [initiatedById], references: [id], onDelete: SetNull)
+  initiatedById           String?
+  startedAt               DateTime?
+  completedAt             DateTime?
+  createdAt               DateTime               @default(now())
+  lastSeenAt              DateTime               @default(now())
+  answers                 Answer[]
+  scores                  Score[]
 
   @@index([participantTokenHash])
   @@index([inviteId])
@@ -206,15 +206,15 @@ model TestPackage {
 }
 
 model EvaluationRosterEntry {
-  id            String      @id @default(cuid())
-  evaluation    Evaluation  @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
-  evaluationId  String
-  code          String
-  grade         String?
-  section       String?
-  metadata      Json?
-  createdAt     DateTime    @default(now())
-  testSessions  TestSession[]
+  id           String        @id @default(cuid())
+  evaluation   Evaluation    @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  evaluationId String
+  code         String
+  grade        String?
+  section      String?
+  metadata     Json?
+  createdAt    DateTime      @default(now())
+  testSessions TestSession[]
 
   @@unique([evaluationId, code])
   @@index([evaluationId])
@@ -251,40 +251,40 @@ model EvaluationTest {
 }
 
 model CamouflageSet {
-  id        String                 @id @default(cuid())
-  slug      String                 @unique
-  title     String
-  isActive  Boolean                @default(true)
-  createdAt DateTime               @default(now())
-  characters CamouflageCharacter[]
-  options   TestCamouflageOption[]
+  id              String                  @id @default(cuid())
+  slug            String                  @unique
+  title           String
+  isActive        Boolean                 @default(true)
+  createdAt       DateTime                @default(now())
+  characters      CamouflageCharacter[]
+  options         TestCamouflageOption[]
   evaluationTests EvaluationTest[]
-  mappings  TestCamouflageMapping[]
-  copies    TestCamouflageCopy[]
+  mappings        TestCamouflageMapping[]
+  copies          TestCamouflageCopy[]
 }
 
 model CamouflageCharacter {
-  id        String   @id @default(cuid())
-  set       CamouflageSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+  id        String                  @id @default(cuid())
+  set       CamouflageSet           @relation(fields: [setId], references: [id], onDelete: Cascade)
   setId     String
   key       String
   title     String
   imageUrl  String?
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
+  sortOrder Int                     @default(0)
+  createdAt DateTime                @default(now())
   mappings  TestCamouflageMapping[]
 
   @@unique([setId, key])
 }
 
 model TestCamouflageOption {
-  id               String          @id @default(cuid())
-  testDefinition   TestDefinition  @relation(fields: [testDefinitionId], references: [id], onDelete: Cascade)
+  id               String         @id @default(cuid())
+  testDefinition   TestDefinition @relation(fields: [testDefinitionId], references: [id], onDelete: Cascade)
   testDefinitionId String
-  camouflageSet    CamouflageSet   @relation(fields: [camouflageSetId], references: [id], onDelete: Cascade)
+  camouflageSet    CamouflageSet  @relation(fields: [camouflageSetId], references: [id], onDelete: Cascade)
   camouflageSetId  String
-  isActive         Boolean         @default(true)
-  sortOrder        Int             @default(0)
+  isActive         Boolean        @default(true)
+  sortOrder        Int            @default(0)
 
   @@unique([testDefinitionId, camouflageSetId])
   @@index([testDefinitionId])
@@ -292,23 +292,23 @@ model TestCamouflageOption {
 }
 
 model TestCamouflageSlot {
-  id               String          @id @default(cuid())
-  testDefinition   TestDefinition  @relation(fields: [testDefinitionId], references: [id], onDelete: Cascade)
+  id               String         @id @default(cuid())
+  testDefinition   TestDefinition @relation(fields: [testDefinitionId], references: [id], onDelete: Cascade)
   testDefinitionId String
   key              String
   rank             Int
   title            String?
-  createdAt        DateTime        @default(now())
+  createdAt        DateTime       @default(now())
 
   @@unique([testDefinitionId, key])
   @@index([testDefinitionId, rank])
 }
 
 model TestCamouflageMapping {
-  id               String             @id @default(cuid())
-  testDefinition   TestDefinition     @relation(fields: [testDefinitionId], references: [id], onDelete: Cascade)
+  id               String              @id @default(cuid())
+  testDefinition   TestDefinition      @relation(fields: [testDefinitionId], references: [id], onDelete: Cascade)
   testDefinitionId String
-  camouflageSet    CamouflageSet      @relation(fields: [camouflageSetId], references: [id], onDelete: Cascade)
+  camouflageSet    CamouflageSet       @relation(fields: [camouflageSetId], references: [id], onDelete: Cascade)
   camouflageSetId  String
   slotKey          String
   character        CamouflageCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)

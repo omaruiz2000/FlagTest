@@ -222,5 +222,6 @@ export async function joinSchoolSession(evaluationId: string, rosterEntryId: str
       });
 
   setParticipantCookie(session.id, token);
-  return { sessionId: session.id, status: session.status };
+  return { sessionId: session.id, status: session.status, token };
+
 }

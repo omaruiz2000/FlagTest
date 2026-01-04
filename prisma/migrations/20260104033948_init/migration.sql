@@ -2,7 +2,7 @@
 CREATE TYPE "OrgRole" AS ENUM ('OWNER', 'ADMIN', 'MEMBER');
 
 -- CreateEnum
-CREATE TYPE "EvaluationStatus" AS ENUM ('DRAFT', 'ACTIVE', 'ARCHIVED');
+CREATE TYPE "EvaluationStatus" AS ENUM ('DRAFT', 'OPEN', 'CLOSED');
 
 -- CreateEnum
 CREATE TYPE "TestSessionStatus" AS ENUM ('CREATED', 'ACTIVE', 'COMPLETED', 'CANCELLED');
@@ -62,6 +62,7 @@ CREATE TABLE "Evaluation" (
     "name" TEXT NOT NULL,
     "description" TEXT,
     "status" "EvaluationStatus" NOT NULL DEFAULT 'DRAFT',
+    "testPackageId" TEXT,
     "isClosed" BOOLEAN NOT NULL DEFAULT false,
     "closedAt" TIMESTAMP(3),
     "closedByUserId" TEXT,
@@ -125,6 +126,7 @@ CREATE TABLE "TestSession" (
     "participantTokenHash" TEXT,
     "evaluationId" TEXT,
     "inviteId" TEXT,
+    "evaluationRosterEntryId" TEXT,
     "studentRecordId" TEXT,
     "groupId" TEXT,
     "initiatedById" TEXT,
@@ -147,6 +149,19 @@ CREATE TABLE "TestPackage" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "TestPackage_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "EvaluationRosterEntry" (
+    "id" TEXT NOT NULL,
+    "evaluationId" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "grade" TEXT,
+    "section" TEXT,
+    "metadata" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "EvaluationRosterEntry_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -334,7 +349,16 @@ CREATE INDEX "TestSession_participantTokenHash_idx" ON "TestSession"("participan
 CREATE INDEX "TestSession_inviteId_idx" ON "TestSession"("inviteId");
 
 -- CreateIndex
+CREATE INDEX "TestSession_evaluationRosterEntryId_idx" ON "TestSession"("evaluationRosterEntryId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "TestPackage_slug_key" ON "TestPackage"("slug");
+
+-- CreateIndex
+CREATE INDEX "EvaluationRosterEntry_evaluationId_idx" ON "EvaluationRosterEntry"("evaluationId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "EvaluationRosterEntry_evaluationId_code_key" ON "EvaluationRosterEntry"("evaluationId", "code");
 
 -- CreateIndex
 CREATE INDEX "TestPackageItem_testPackageId_sortOrder_idx" ON "TestPackageItem"("testPackageId", "sortOrder");
@@ -412,6 +436,9 @@ ALTER TABLE "OrgMember" ADD CONSTRAINT "OrgMember_userId_fkey" FOREIGN KEY ("use
 ALTER TABLE "OrgMember" ADD CONSTRAINT "OrgMember_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "Evaluation" ADD CONSTRAINT "Evaluation_testPackageId_fkey" FOREIGN KEY ("testPackageId") REFERENCES "TestPackage"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Evaluation" ADD CONSTRAINT "Evaluation_closedByUserId_fkey" FOREIGN KEY ("closedByUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -439,6 +466,9 @@ ALTER TABLE "TestSession" ADD CONSTRAINT "TestSession_evaluationId_fkey" FOREIGN
 ALTER TABLE "TestSession" ADD CONSTRAINT "TestSession_inviteId_fkey" FOREIGN KEY ("inviteId") REFERENCES "Invite"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "TestSession" ADD CONSTRAINT "TestSession_evaluationRosterEntryId_fkey" FOREIGN KEY ("evaluationRosterEntryId") REFERENCES "EvaluationRosterEntry"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "TestSession" ADD CONSTRAINT "TestSession_studentRecordId_fkey" FOREIGN KEY ("studentRecordId") REFERENCES "StudentRecord"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -446,6 +476,9 @@ ALTER TABLE "TestSession" ADD CONSTRAINT "TestSession_groupId_fkey" FOREIGN KEY 
 
 -- AddForeignKey
 ALTER TABLE "TestSession" ADD CONSTRAINT "TestSession_initiatedById_fkey" FOREIGN KEY ("initiatedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "EvaluationRosterEntry" ADD CONSTRAINT "EvaluationRosterEntry_evaluationId_fkey" FOREIGN KEY ("evaluationId") REFERENCES "Evaluation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "TestPackageItem" ADD CONSTRAINT "TestPackageItem_testPackageId_fkey" FOREIGN KEY ("testPackageId") REFERENCES "TestPackage"("id") ON DELETE CASCADE ON UPDATE CASCADE;

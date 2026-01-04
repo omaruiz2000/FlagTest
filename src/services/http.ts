@@ -43,7 +43,12 @@ export async function apiFetch<T = unknown>(path: string, options: ApiFetchOptio
     }
   }
 
-  const response = await fetch(path, init);
+  const response = await fetch(path, {
+    ...init,
+    credentials: 'include',
+    cache: 'no-store',
+  });
+
   if (!response.ok) {
     let message = 'Request failed';
     let data: unknown;
@@ -53,9 +58,7 @@ export async function apiFetch<T = unknown>(path: string, options: ApiFetchOptio
       if (extracted && typeof extracted === 'string') {
         message = extracted;
       }
-    } catch (error) {
-      // ignore parse errors and keep default message
-    }
+    } catch (_) {}
     throw new ApiError(message, response.status, data);
   }
 
