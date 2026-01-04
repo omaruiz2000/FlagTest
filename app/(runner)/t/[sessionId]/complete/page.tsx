@@ -55,7 +55,7 @@ export default async function CompletionPage({ params }: CompletionProps) {
         },
       },
       invite: { select: { id: true, token: true } },
-      evaluationRosterEntry: { select: { id: true } },
+      evaluationRosterEntry: { select: { id: true, code: true } },
       scores: true,
     },
   });
@@ -80,11 +80,14 @@ export default async function CompletionPage({ params }: CompletionProps) {
   const invite = session.invite;
   const evaluation = session.evaluation;
   const rosterEntryId = session.evaluationRosterEntry?.id;
+  const rosterEntryCode = session.evaluationRosterEntry?.code;
   const inviteToken = session.invite?.token ?? null;
 
   const joinLink = evaluation
     ? inviteToken
       ? `/join?e=${evaluation.id}&inv=${inviteToken}`
+      : rosterEntryCode
+        ? `/join?e=${evaluation.id}&code=${encodeURIComponent(rosterEntryCode)}`
       : `/join?e=${evaluation.id}`
     : "/join";
 
