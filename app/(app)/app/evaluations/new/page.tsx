@@ -13,6 +13,7 @@ const createEvaluationSchema = z.object({
   inviteCount: z.number().int().min(1).max(500).default(1),
   inviteLabels: z.array(z.string()).optional(),
   participantFeedbackMode: z.enum(['THANK_YOU_ONLY', 'CAMOUFLAGE']).default('THANK_YOU_ONLY'),
+  roster: z.string().optional(),
 });
 
 function chooseDefaultCamouflageSets(
@@ -77,6 +78,7 @@ async function createEvaluationAction(formData: FormData) {
       participantFeedbackMode === 'CAMOUFLAGE' || participantFeedbackMode === 'THANK_YOU_ONLY'
         ? participantFeedbackMode
         : 'THANK_YOU_ONLY',
+    roster: typeof formData.get('roster') === 'string' ? (formData.get('roster') as string) : undefined,
   });
 
   if (!parsed.success) {
@@ -86,6 +88,13 @@ async function createEvaluationAction(formData: FormData) {
 
   const { name: evalName, packageId: evalPackageId, tests: selectedTests } = parsed.data;
   const { participantFeedbackMode: feedbackMode } = parsed.data;
+  const targetPackage = await prisma.testPackage.findUnique({ select: { id: true, slug: true }, where: { id: evalPackageId } });
+
+  if (!targetPackage) {
+    return { error: 'Package not found' };
+  }
+
+  const isSchoolBundle = targetPackage.slug === 'school-bundle';
   const packageItems = await prisma.testPackageItem.findMany({
     where: { testPackageId: evalPackageId, testDefinitionId: { in: selectedTests } },
     orderBy: { sortOrder: 'asc' },
@@ -96,6 +105,58 @@ async function createEvaluationAction(formData: FormData) {
   }
 
   const orderedTests = packageItems.map((item) => item.testDefinitionId);
+  const rosterEntries: { code: string; grade?: string | null; section?: string | null; metadata?: unknown }[] = [];
+
+  if (isSchoolBundle) {
+    if (!parsed.data.roster) {
+      return { error: 'Roster CSV is required for School Bundle' };
+    }
+
+    let rosterPayload: unknown;
+    try {
+      rosterPayload = JSON.parse(parsed.data.roster);
+    } catch (error) {
+      return { error: 'Invalid roster payload' };
+    }
+
+    const rosterSchema = z
+      .array(
+        z.object({
+          code: z.string().min(1),
+          grade: z.string().optional().nullable(),
+          section: z.string().optional().nullable(),
+          metadata: z.record(z.unknown()).optional().nullable(),
+        }),
+      )
+      .min(1);
+
+    const rosterParsed = rosterSchema.safeParse(rosterPayload);
+    if (!rosterParsed.success) {
+      return { error: 'Invalid roster payload' };
+    }
+
+    const seen = new Set<string>();
+    for (const entry of rosterParsed.data) {
+      const normalizedCode = entry.code.trim();
+      if (!normalizedCode) {
+        continue;
+      }
+      if (seen.has(normalizedCode)) {
+        return { error: 'Duplicate student codes detected' };
+      }
+      seen.add(normalizedCode);
+      rosterEntries.push({
+        code: normalizedCode,
+        grade: entry.grade?.trim() || null,
+        section: entry.section?.trim() || null,
+        metadata: entry.metadata ?? undefined,
+      });
+    }
+
+    if (!rosterEntries.length) {
+      return { error: 'Roster CSV is required for School Bundle' };
+    }
+  }
   const allowedCamouflageOptions =
     feedbackMode === 'CAMOUFLAGE'
       ? await prisma.testCamouflageOption.findMany({
@@ -115,6 +176,7 @@ async function createEvaluationAction(formData: FormData) {
       organizationId: null,
       ownerUserId: user.id,
       participantFeedbackMode: feedbackMode,
+      testPackageId: evalPackageId,
     },
   });
 
@@ -128,20 +190,32 @@ async function createEvaluationAction(formData: FormData) {
     })),
   });
 
-  const invites = [] as { evaluationId: string; token: string; tokenHash: string; alias?: string | null }[];
-  const labels = parsed.data.inviteLabels ?? [];
-  for (let i = 0; i < parsed.data.inviteCount; i += 1) {
-    const token = generateInviteToken();
-    invites.push({
-      evaluationId: evaluation.id,
-      token,
-      tokenHash: hashInviteToken(token),
-      alias: labels[i] ?? null,
+  if (rosterEntries.length) {
+    await prisma.evaluationRosterEntry.createMany({
+      data: rosterEntries.map((entry) => ({
+        evaluationId: evaluation.id,
+        code: entry.code,
+        grade: entry.grade,
+        section: entry.section,
+        metadata: entry.metadata ?? undefined,
+      })),
     });
-  }
+  } else {
+    const invites = [] as { evaluationId: string; token: string; tokenHash: string; alias?: string | null }[];
+    const labels = parsed.data.inviteLabels ?? [];
+    for (let i = 0; i < parsed.data.inviteCount; i += 1) {
+      const token = generateInviteToken();
+      invites.push({
+        evaluationId: evaluation.id,
+        token,
+        tokenHash: hashInviteToken(token),
+        alias: labels[i] ?? null,
+      });
+    }
 
-  if (invites.length) {
-    await prisma.invite.createMany({ data: invites });
+    if (invites.length) {
+      await prisma.invite.createMany({ data: invites });
+    }
   }
 
   redirect(`/app/evaluations/${evaluation.id}`);

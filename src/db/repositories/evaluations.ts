@@ -5,7 +5,13 @@ import { hashInviteToken } from '@/src/auth/inviteTokens';
 export function findEvaluationById(id: string) {
   return prisma.evaluation.findUnique({
     where: { id },
-    select: { id: true, name: true, isClosed: true, status: true },
+    select: {
+      id: true,
+      name: true,
+      isClosed: true,
+      status: true,
+      testPackage: { select: { id: true, slug: true, title: true } },
+    },
   });
 }
 
@@ -109,6 +115,29 @@ export async function findInviteTestStatuses(inviteId: string, testDefinitionIds
   }, {});
 }
 
+export async function findSchoolTestStatuses(
+  evaluationId: string,
+  rosterEntryId: string,
+  testDefinitionIds: string[],
+) {
+  if (!rosterEntryId || testDefinitionIds.length === 0) {
+    return {} as Record<string, { status: TestSessionStatus; hasAnswers: boolean }>;
+  }
+
+  const attemptKeys = testDefinitionIds.map((testId) => `school:${evaluationId}:${rosterEntryId}:${testId}`);
+  const sessions = await prisma.testSession.findMany({
+    where: { attemptKey: { in: attemptKeys } },
+    select: { attemptKey: true, status: true, _count: { select: { answers: true } } },
+  });
+
+  return sessions.reduce<Record<string, { status: TestSessionStatus; hasAnswers: boolean }>>((acc, session) => {
+    const segments = session.attemptKey.split(':');
+    const testId = segments[segments.length - 1];
+    acc[testId] = { status: session.status, hasAnswers: session._count.answers > 0 || session.status === 'ACTIVE' };
+    return acc;
+  }, {});
+}
+
 export function loadEvaluationDetails(
   evaluationId: string,
   options: { ownerUserId?: string; includeDeleted?: boolean } = {},
@@ -140,6 +169,11 @@ export function loadEvaluationDetails(
           camouflageSet: { select: { id: true, title: true, slug: true } },
         },
       },
+      testPackage: { select: { id: true, slug: true, title: true } },
+      roster: {
+        select: { id: true, code: true, grade: true, section: true },
+        orderBy: { createdAt: 'asc' },
+      },
       invites: {
         orderBy: { createdAt: 'asc' },
         include: {
@@ -150,6 +184,7 @@ export function loadEvaluationDetails(
         where: { evaluationId },
         include: {
           invite: { select: { alias: true, id: true } },
+          evaluationRosterEntry: { select: { code: true, grade: true, section: true } },
           testDefinition: { select: { id: true, title: true } },
           scores: true,
         },

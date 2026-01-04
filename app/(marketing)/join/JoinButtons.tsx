@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ApiError } from '@/src/services/http';
-import { joinEvaluationTest, joinInviteTest } from '@/src/services/join';
+import { JoinEvaluationResponse, joinEvaluationTest, joinInviteTest } from '@/src/services/join';
 
 type TestInfo = {
   id: string;
@@ -19,9 +19,18 @@ type Props = {
   selectedTestId?: string;
   statusMap?: Record<string, StatusInfo>;
   isEvaluationClosed?: boolean;
+  onJoin?: (testId: string) => Promise<JoinEvaluationResponse>;
 };
 
-export function JoinButtons({ evaluationId, inviteToken, tests, selectedTestId, statusMap = {}, isEvaluationClosed }: Props) {
+export function JoinButtons({
+  evaluationId,
+  inviteToken,
+  tests,
+  selectedTestId,
+  statusMap = {},
+  isEvaluationClosed,
+  onJoin,
+}: Props) {
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [statuses, setStatuses] = useState<Record<string, StatusInfo>>(statusMap);
@@ -36,9 +45,11 @@ export function JoinButtons({ evaluationId, inviteToken, tests, selectedTestId, 
     setLoadingId(testId);
     setErrors((prev) => ({ ...prev, [testId]: '' }));
     try {
-      const result = inviteToken
-        ? await joinInviteTest(evaluationId as string, inviteToken, testId)
-        : await joinEvaluationTest(evaluationId as string, testId);
+      const result = onJoin
+        ? await onJoin(testId)
+        : inviteToken
+          ? await joinInviteTest(evaluationId as string, inviteToken, testId)
+          : await joinEvaluationTest(evaluationId as string, testId);
       setStatuses((prev) => ({ ...prev, [testId]: { status: result.status ?? 'ACTIVE', hasAnswers: false } }));
       router.push(`/t/${result.sessionId}`);
     } catch (error) {

@@ -8,6 +8,7 @@ import {
 } from '@/src/db/repositories/evaluations';
 import { CodeJoinForm } from './CodeJoinForm';
 import { JoinButtons } from './JoinButtons';
+import { SchoolJoin } from './SchoolJoin';
 
 type JoinPageProps = {
   searchParams?: { [key: string]: string | string[] | undefined };
@@ -97,12 +98,23 @@ export default async function JoinPage({ searchParams }: JoinPageProps) {
     return notFound();
   }
 
+  const isSchoolBundle = evaluation.testPackage?.slug === 'school-bundle';
   const tests = evaluation.tests.map((evaluationTest) => ({
     id: evaluationTest.testDefinition.id,
     title: evaluationTest.testDefinition.title,
   }));
 
   const isClosed = evaluation.status === 'CLOSED';
+  if (isSchoolBundle) {
+    return (
+      <SchoolJoin
+        evaluationId={evaluation.id}
+        evaluationName={evaluation.name}
+        tests={tests}
+        isEvaluationClosed={isClosed}
+      />
+    );
+  }
   const participantId = cookies().get(`ft_pid_${evaluation.id}`)?.value;
   const statusMap = participantId
     ? await findEvaluationTestStatuses(

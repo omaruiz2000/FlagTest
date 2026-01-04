@@ -89,6 +89,8 @@ model Evaluation {
   name           String
   description    String?
   status         EvaluationStatus   @default(DRAFT)
+  testPackage    TestPackage?       @relation(fields: [testPackageId], references: [id])
+  testPackageId  String?
   isClosed       Boolean            @default(false)
   closedAt       DateTime?
   closedBy       User?              @relation("EvaluationClosedBy", fields: [closedByUserId], references: [id])
@@ -106,6 +108,7 @@ model Evaluation {
   sessions       TestSession[]
   tests          EvaluationTest[]
   invites        Invite[]
+  roster         EvaluationRosterEntry[]
 
   @@index([deletedAt])
   @@index([ownerUserId])
@@ -170,6 +173,8 @@ model TestSession {
   evaluationId         String?
   invite               Invite?           @relation(fields: [inviteId], references: [id], onDelete: SetNull)
   inviteId             String?
+  evaluationRosterEntry EvaluationRosterEntry? @relation(fields: [evaluationRosterEntryId], references: [id], onDelete: SetNull)
+  evaluationRosterEntryId String?
   studentRecord        StudentRecord?    @relation(fields: [studentRecordId], references: [id], onDelete: SetNull)
   studentRecordId      String?
   group                Group?            @relation(fields: [groupId], references: [id], onDelete: SetNull)
@@ -185,6 +190,7 @@ model TestSession {
 
   @@index([participantTokenHash])
   @@index([inviteId])
+  @@index([evaluationRosterEntryId])
 }
 
 model TestPackage {
@@ -196,6 +202,22 @@ model TestPackage {
   isActive    Boolean           @default(true)
   createdAt   DateTime          @default(now())
   items       TestPackageItem[]
+  evaluations Evaluation[]
+}
+
+model EvaluationRosterEntry {
+  id            String      @id @default(cuid())
+  evaluation    Evaluation  @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  evaluationId  String
+  code          String
+  grade         String?
+  section       String?
+  metadata      Json?
+  createdAt     DateTime    @default(now())
+  testSessions  TestSession[]
+
+  @@unique([evaluationId, code])
+  @@index([evaluationId])
 }
 
 model TestPackageItem {
