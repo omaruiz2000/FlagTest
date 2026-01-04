@@ -55,7 +55,7 @@ export default async function CompletionPage({ params }: CompletionProps) {
         },
       },
       invite: { select: { id: true, token: true } },
-      evaluationRosterEntry: { select: { id: true } },
+      evaluationRosterEntry: { select: { id: true, code: true } },
       scores: true,
     },
   });
@@ -77,15 +77,18 @@ export default async function CompletionPage({ params }: CompletionProps) {
   const style = resolveStyle(testDefinition.styleId);
   const feedbackMode: ParticipantFeedbackMode = session.evaluation?.participantFeedbackMode ?? "THANK_YOU_ONLY";
 
-  const invite = session.invite;
   const evaluation = session.evaluation;
-  const rosterEntryId = session.evaluationRosterEntry?.id;
+  const inviteId = session.invite?.id ?? null;
   const inviteToken = session.invite?.token ?? null;
+  const rosterEntryId = session.evaluationRosterEntry?.id;
+  const studentCode = session.evaluationRosterEntry?.code ?? null;
 
   const joinLink = evaluation
     ? inviteToken
       ? `/join?e=${evaluation.id}&inv=${inviteToken}`
-      : `/join?e=${evaluation.id}`
+      : studentCode
+        ? `/join?e=${evaluation.id}&inv=${studentCode}`
+        : `/join?e=${evaluation.id}`
     : "/join";
 
   const orderedTests = evaluation?.tests ?? [];
@@ -93,8 +96,8 @@ export default async function CompletionPage({ params }: CompletionProps) {
 
   const testIds = orderedTests.map((test) => test.testDefinitionId);
 
-  const statusMap = invite
-    ? await findInviteTestStatuses(invite.id, testIds)
+  const statusMap = inviteId
+    ? await findInviteTestStatuses(inviteId, testIds)
     : rosterEntryId
       ? await findSchoolTestStatuses(evaluation?.id ?? "", rosterEntryId, testIds)
       : evaluation
@@ -125,11 +128,11 @@ export default async function CompletionPage({ params }: CompletionProps) {
     }
 
     try {
-      if (invite) {
-        const result = await joinInviteSession(evaluation.id, invite.token, nextTestDefinitionId);
+      if (inviteToken) {
+        const result = await joinInviteSession(evaluation.id, inviteToken, nextTestDefinitionId);
         redirect(`/t/${result.sessionId}`);
-      } else if (rosterEntryId) {
-        const result = await joinSchoolSession(evaluation.id, rosterEntryId, nextTestDefinitionId);
+      } else if (rosterEntryId && studentCode) {
+        const result = await joinSchoolSession(evaluation.id, studentCode, nextTestDefinitionId);
         redirect(`/t/${result.sessionId}`);
       } else {
         const result = await joinEvaluationSession(evaluation.id, nextTestDefinitionId);

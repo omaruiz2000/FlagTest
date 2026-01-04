@@ -1,22 +1,18 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
-import { JoinButtons } from './JoinButtons';
-import { joinSchoolLookup, joinSchoolTest } from '@/src/services/join';
-
-type TestInfo = { id: string; title: string };
+import { useRouter } from 'next/navigation';
+import { joinSchoolLookup } from '@/src/services/join';
 
 type Props = {
   evaluationId: string;
   evaluationName: string;
-  tests: TestInfo[];
   isEvaluationClosed?: boolean;
 };
 
-export function SchoolJoin({ evaluationId, evaluationName, tests, isEvaluationClosed }: Props) {
+export function SchoolJoin({ evaluationId, evaluationName, isEvaluationClosed }: Props) {
+  const router = useRouter();
   const [studentCode, setStudentCode] = useState('');
-  const [rosterEntryId, setRosterEntryId] = useState<string | null>(null);
-  const [statusMap, setStatusMap] = useState<Record<string, { status?: string; hasAnswers?: boolean }>>({});
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -24,12 +20,11 @@ export function SchoolJoin({ evaluationId, evaluationName, tests, isEvaluationCl
     event.preventDefault();
     setLoading(true);
     setError(null);
-    setRosterEntryId(null);
-    setStatusMap({});
     try {
       const result = await joinSchoolLookup(evaluationId, studentCode.trim());
-      setRosterEntryId(result.rosterEntryId);
-      setStatusMap(result.statusMap || {});
+      if (result?.rosterEntryId) {
+        router.push(`/join?e=${evaluationId}&inv=${studentCode.trim()}`);
+      }
     } catch (err) {
       setError((err as Error).message || 'Invalid code');
     } finally {
@@ -75,17 +70,6 @@ export function SchoolJoin({ evaluationId, evaluationName, tests, isEvaluationCl
         {error ? <p style={{ color: 'crimson' }}>{error}</p> : null}
       </form>
 
-      {rosterEntryId ? (
-        <div style={{ marginTop: 32 }}>
-          <JoinButtons
-            evaluationId={evaluationId}
-            tests={tests}
-            statusMap={statusMap}
-            isEvaluationClosed={isEvaluationClosed}
-            onJoin={(testId) => joinSchoolTest(evaluationId, rosterEntryId, testId)}
-          />
-        </div>
-      ) : null}
     </main>
   );
 }
