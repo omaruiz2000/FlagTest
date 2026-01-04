@@ -19,7 +19,10 @@ export async function POST(request: Request, { params }: { params: { sessionId: 
   }
 
   const participant = readParticipantCookie();
-  if (!participant?.token || participant.sessionId !== params.sessionId) {
+  const participantToken = participant?.token ?? null;
+  const participantSessionId = participant?.sessionId ?? null;
+
+  if (!participantToken || participantSessionId !== params.sessionId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
@@ -40,7 +43,7 @@ export async function POST(request: Request, { params }: { params: { sessionId: 
     return NextResponse.json({ error: 'Evaluation is closed' }, { status: 409 });
   }
 
-  if (!participant.token || !verifyParticipantTokenHash(participant.token, session.participantTokenHash)) {
+  if (!participantToken || !verifyParticipantTokenHash(participantToken, session.participantTokenHash)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
