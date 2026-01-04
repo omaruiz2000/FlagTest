@@ -77,11 +77,11 @@ export default async function CompletionPage({ params }: CompletionProps) {
   const style = resolveStyle(testDefinition.styleId);
   const feedbackMode: ParticipantFeedbackMode = session.evaluation?.participantFeedbackMode ?? "THANK_YOU_ONLY";
 
-  const invite = session.invite;
   const evaluation = session.evaluation;
+  const inviteId = session.invite?.id ?? null;
+  const inviteToken = session.invite?.token ?? null;
   const rosterEntryId = session.evaluationRosterEntry?.id;
   const studentCode = session.evaluationRosterEntry?.code ?? null;
-  const inviteToken = session.invite?.token ?? null;
 
   const joinLink = evaluation
     ? inviteToken
@@ -96,8 +96,8 @@ export default async function CompletionPage({ params }: CompletionProps) {
 
   const testIds = orderedTests.map((test) => test.testDefinitionId);
 
-  const statusMap = invite
-    ? await findInviteTestStatuses(invite.id, testIds)
+  const statusMap = inviteId
+    ? await findInviteTestStatuses(inviteId, testIds)
     : rosterEntryId
       ? await findSchoolTestStatuses(evaluation?.id ?? "", rosterEntryId, testIds)
       : evaluation
@@ -128,12 +128,12 @@ export default async function CompletionPage({ params }: CompletionProps) {
     }
 
     try {
-      if (invite) {
-        const result = await joinInviteSession(evaluation.id, invite.token, nextTestDefinitionId);
+      if (inviteToken) {
+        const result = await joinInviteSession(evaluation.id, inviteToken, nextTestDefinitionId);
         redirect(`/t/${result.sessionId}`);
-    } else if (rosterEntryId && studentCode) {
-      const result = await joinSchoolSession(evaluation.id, studentCode, nextTestDefinitionId);
-      redirect(`/t/${result.sessionId}`);
+      } else if (rosterEntryId && studentCode) {
+        const result = await joinSchoolSession(evaluation.id, studentCode, nextTestDefinitionId);
+        redirect(`/t/${result.sessionId}`);
       } else {
         const result = await joinEvaluationSession(evaluation.id, nextTestDefinitionId);
         redirect(`/t/${result.sessionId}`);
