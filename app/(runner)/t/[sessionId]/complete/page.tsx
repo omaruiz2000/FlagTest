@@ -16,10 +16,12 @@ type CompletionProps = { params: { sessionId: string } };
 
 export default async function CompletionPage({ params }: CompletionProps) {
   const participant = readParticipantCookie();
+  const participantToken = participant?.token ?? null;
+  const participantSessionId = participant?.sessionId ?? null;
 
   // ✅ evita el runtime "Cannot read properties of null (reading 'token')"
   // si participant existe pero token es null/undefined, igual mandamos a /join
-  if (!participant?.token || participant.sessionId !== params.sessionId) {
+  if (!participantToken || participantSessionId !== params.sessionId) {
     redirect("/join");
   }
 
@@ -61,7 +63,7 @@ export default async function CompletionPage({ params }: CompletionProps) {
   });
 
   // ✅ protege participantTokenHash y participant.token
-  if (!session?.participantTokenHash || !verifyParticipantTokenHash(participant.token, session.participantTokenHash)) {
+  if (!participantToken || !session?.participantTokenHash || !verifyParticipantTokenHash(participantToken, session.participantTokenHash)) {
     redirect("/join");
   }
 
